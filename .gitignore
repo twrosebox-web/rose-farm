@@ -1,0 +1,10 @@
+# Local editor and operating-system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local runtime files
+*.log
+__pycache__/
+

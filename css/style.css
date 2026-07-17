@@ -1,0 +1,79 @@
+/* ============================================
+   style.css｜農場體驗頁 全域樣式
+   ★ 改全站顏色 → 搜尋 #3a5a40 (primary) 或 #d06765 (accent)
+   ★ 改全站字體大小 → 改 html { font-size }
+   ============================================ */
+
+/* ---------- 字體基準 ---------- */
+html { font-size: 13px; }
+@media (max-width: 768px) { html { font-size: 16px; } }
+
+/* ---------- .clp 範疇化基礎 ---------- */
+.clp * { box-sizing: border-box; }
+.clp h1, .clp h2, .clp h3 { line-height: 1.2; }
+.clp { font-family: 'Noto Sans TC', sans-serif; overflow-x: hidden; }
+
+/* ---------- Mshop 圖片覆蓋 ---------- */
+.clp img {
+    max-width: none !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* ---------- 隱藏捲軸 ---------- */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---------- 通用動畫 ---------- */
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+/* ---------- 卡片翻轉 ---------- */
+.perspective-1000 { perspective: 1000px; }
+.transform-style-3d { transform-style: preserve-3d; }
+.backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.rotate-y-180 { transform: rotateY(180deg); }
+.group:hover .group-hover\:rotate-y-180 { transform: rotateY(180deg); }
+.flip-inner.is-flipped { transform: rotateY(180deg); }
+
+/* ---------- Bento Grid 特效 ---------- */
+.clp .bento-item .bento-content { transform: translateY(0); }
+.clp .bento-item .bento-tags { opacity: 0; max-height: 0; overflow: hidden; transition: all 0.4s ease-out; margin-top: 0; }
+.clp .bento-item:hover .bento-tags { opacity: 1; max-height: 100px; margin-top: 1rem; }
+.clp .bento-item:hover img { transform: scale(1.1); }
+@media (max-width: 768px) {
+    .clp .bento-item .bento-tags { opacity: 1; max-height: 100px; margin-top: 0.5rem; }
+}
+
+/* ---------- 拍立得效果 ---------- */
+.clp .polaroid-card { transition: all 0.5s; z-index: 1; }
+@media (min-width: 769px) {
+    .clp .polaroid-card:nth-child(odd) { transform: rotate(-3deg); }
+    .clp .polaroid-card:nth-child(even) { transform: rotate(2deg); }
+    .clp .polaroid-card:hover { transform: scale(1.1) rotate(0deg) !important; z-index: 50; }
+}
+
+/* ---------- 電梯導覽列 ---------- */
+.clp-nav .nav-item { opacity: 0; transform: translateY(20px) scale(0.9); pointer-events: none; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.clp-nav.nav-open .nav-item { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.clp-nav.nav-open .nav-item:nth-last-child(1) { transition-delay: 0.05s; }
+.clp-nav.nav-open .nav-item:nth-last-child(2) { transition-delay: 0.1s; }
+.clp-nav.nav-open .nav-item:nth-last-child(3) { transition-delay: 0.15s; }
+.clp-nav.nav-open .nav-item:nth-last-child(4) { transition-delay: 0.2s; }
+.clp-nav.nav-open .nav-item:nth-last-child(5) { transition-delay: 0.25s; }
+.clp-nav.nav-open .nav-item:nth-last-child(6) { transition-delay: 0.3s; }
+.clp-nav #elevator-toggle { transition: transform 0.3s ease; }
+.clp-nav.nav-open #elevator-toggle { transform: rotate(90deg); background-color: #1f2937; }
+
+/* ---------- 花曆抽屜泡泡 ---------- */
+@keyframes floatUp {
+    0% { transform: translateY(0) scale(0.5) rotate(0deg); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(-60px) scale(1.2) rotate(20deg); opacity: 0; }
+}
+.flower-bubble { opacity: 0; pointer-events: none; }
+.group:hover .flower-bubble { animation: floatUp 2s ease-out infinite; }
+.fb-1 { animation-delay: 0s; }
+.fb-2 { animation-delay: 0.5s; }
+.fb-3 { animation-delay: 1.2s; }
+.fb-4 { animation-delay: 0.8s; }
