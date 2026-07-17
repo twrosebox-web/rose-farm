@@ -268,7 +268,7 @@
             </div>
             <div class="flex flex-col gap-8">
                 <div id="gallery-main-container" class="relative w-full aspect-[3/2] rounded-3xl overflow-hidden shadow-2xl bg-gray-100 group">
-                    <img id="main-gallery-img" src="" class="absolute inset-0 w-full h-full object-cover cursor-zoom-in transition-opacity duration-700 ease-in-out" style="opacity:1;" onclick="window.handleImageClick()">
+                    <img id="main-gallery-img" src="" class="absolute inset-0 w-full h-full object-cover cursor-zoom-in transition-opacity duration-700 ease-in-out" style="opacity:1;" onclick="window.handleImageClick()" alt="大花玫瑰休閒農場園區相簿">
                     <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-12 pointer-events-none">
                         <h3 id="main-gallery-title" class="text-white font-bold text-4xl font-serif tracking-wide"></h3>
                     </div>
@@ -430,9 +430,9 @@
             <!-- 招牌鍋介紹（左圖右文）-->
             <div class="flex flex-col lg:flex-row gap-20 items-center mb-40">
                 <div class="lg:w-1/2 relative h-[500px] lg:h-[750px] w-full flex items-center justify-center">
-                    <div class="absolute w-80 h-80 lg:w-[600px] lg:h-[600px] rounded-full overflow-hidden border-8 border-white shadow-2xl z-20 transition-transform duration-700 hover:scale-105"><img id="dining-img-0" src="https://i.meee.com.tw/bbEKYrF.webp" class="!absolute !inset-0 !w-full !h-full !object-cover !block" alt="玫瑰料理"></div>
-                    <div class="absolute bottom-4 right-4 lg:bottom-0 lg:-right-4 w-56 h-56 lg:w-[300px] lg:h-[300px] rounded-[40px] overflow-hidden border-8 border-white shadow-xl z-30 rotate-6 hover:rotate-0 transition-all duration-500"><img id="dining-img-1" src="https://i.meee.com.tw/pH9AFHE.webp" class="!absolute !inset-0 !w-full !h-full !object-cover !block"></div>
-                    <div class="absolute top-4 left-4 lg:top-0 lg:-left-4 w-40 h-40 lg:w-[320px] lg:h-[320px] rounded-full overflow-hidden border-8 border-white shadow-lg z-40 -rotate-12 animate-float hover:scale-110 transition-all duration-500 cursor-pointer"><img id="dining-img-2" src="https://i.meee.com.tw/Es9hQP8.webp" class="!absolute !inset-0 !w-full !h-full !object-cover !block opacity-90"></div>
+                    <div class="absolute w-80 h-80 lg:w-[600px] lg:h-[600px] rounded-full overflow-hidden border-8 border-white shadow-2xl z-20 transition-transform duration-700 hover:scale-105"><img id="dining-img-0" src="https://i.meee.com.tw/bbEKYrF.webp" class="!absolute !inset-0 !w-full !h-full !object-cover !block" alt="大花農場玫瑰創意料理"></div>
+                    <div class="absolute bottom-4 right-4 lg:bottom-0 lg:-right-4 w-56 h-56 lg:w-[300px] lg:h-[300px] rounded-[40px] overflow-hidden border-8 border-white shadow-xl z-30 rotate-6 hover:rotate-0 transition-all duration-500"><img id="dining-img-1" src="https://i.meee.com.tw/pH9AFHE.webp" class="!absolute !inset-0 !w-full !h-full !object-cover !block" alt="大花農場玫瑰餐廳特色餐點"></div>
+                    <div class="absolute top-4 left-4 lg:top-0 lg:-left-4 w-40 h-40 lg:w-[320px] lg:h-[320px] rounded-full overflow-hidden border-8 border-white shadow-lg z-40 -rotate-12 animate-float hover:scale-110 transition-all duration-500 cursor-pointer"><img id="dining-img-2" src="https://i.meee.com.tw/Es9hQP8.webp" class="!absolute !inset-0 !w-full !h-full !object-cover !block opacity-90" alt="屏東九如大花農場景觀餐廳"></div>
                 </div>
                 <div class="lg:w-1/2 flex flex-col justify-center px-4">
                     <span class="text-accent text-xl font-bold tracking-[0.4em] uppercase mb-6">The Art of Rose Cuisine</span>
@@ -541,7 +541,7 @@
                 <!-- 園區地圖 -->
                 <div class="lg:col-span-5">
                     <div class="relative w-full aspect-[4/5] bg-gray-100 cursor-zoom-in group overflow-hidden border border-gray-200 shadow-lg rounded-3xl" onclick="window.openModal('modal-map')">
-                        <img src="https://res.cloudinary.com/daypc93hn/image/upload/v1760079811/park-map-original_in4u4q.jpg" class="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-105" alt="園區地圖">
+                        <img src="https://res.cloudinary.com/daypc93hn/image/upload/v1760079811/park-map-original_in4u4q.jpg" class="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-105" alt="大花玫瑰休閒農場園區地圖">
                         <div class="absolute bottom-8 right-8 bg-[#3a5a40]/90 backdrop-blur px-6 py-4 text-xl tracking-widest uppercase shadow-sm text-white group-hover:bg-[#d06765] transition-colors">View Map</div>
                     </div>
                 </div>
@@ -666,7 +666,7 @@
 
 <div id="lightbox" class="fixed inset-0 z-[120] bg-black/95 flex items-center justify-center p-4 hidden animate-fadeIn" onclick="window.closeLightbox()">
     <div class="flex flex-col items-center max-w-7xl" onclick="event.stopPropagation()">
-        <img id="lightbox-img" src="" class="max-w-full max-h-[80vh] object-contain rounded shadow-2xl mb-6" alt="">
+        <img id="lightbox-img" src="" class="max-w-full max-h-[80vh] object-contain rounded shadow-2xl mb-6" alt="大花農場園區相簿大圖">
         <div class="text-center text-white">
             <h3 id="lightbox-title" class="text-4xl font-bold mb-4"></h3>
             <p id="lightbox-desc" class="text-white/70 text-2xl"></p>

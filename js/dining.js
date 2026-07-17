@@ -12,7 +12,7 @@
         diningContainer.innerHTML = window.DATA.diningOptions.map(function(opt) {
             var isRec = opt.modal === 'modal-set-meal';
             return '<div class="bg-white rounded-3xl overflow-hidden border ' + (isRec ? 'border-[#d06765]/30 ring-1 ring-[#d06765]/10' : 'border-gray-100') + ' flex flex-col cursor-pointer group transition-all hover:shadow-2xl relative"' + (opt.modal ? ' onclick="window.openModal(\'' + opt.modal + '\')"' : '') + '>'
-                + '<div class="h-80 overflow-hidden relative"><img src="' + opt.img + '" class="!absolute !inset-0 !w-full !h-full !object-cover !block transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>'
+                + '<div class="h-80 overflow-hidden relative"><img src="' + opt.img + '" class="!absolute !inset-0 !w-full !h-full !object-cover !block transition-transform duration-700 group-hover:scale-110" alt="' + opt.title + '｜大花農場玫瑰餐廳"><div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>'
                 + (isRec ? '<div class="absolute top-6 right-6 bg-[#d06765] text-white text-base font-bold px-6 py-2 rounded-full shadow-lg z-10 animate-pulse">人氣推薦</div>' : '')
                 + '<div class="absolute bottom-8 left-10"><h4 class="text-white text-5xl font-serif font-bold drop-shadow-md">' + opt.title + '</h4></div></div>'
                 + '<div class="p-12 flex flex-col items-center text-center flex-grow">'
@@ -29,7 +29,7 @@
     var foodContainer = document.getElementById('render-food-grid');
     if (foodContainer && window.DATA.food) {
         foodContainer.innerHTML = window.DATA.food.map(function(f) {
-            return '<div class="bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer hover:shadow-xl transition-all" onclick="window.openModal(\'' + f.modal + '\')"><div class="h-72 overflow-hidden"><img src="' + f.image + '" class="!w-full !h-full !object-cover !block"></div><div class="p-10 text-center"><h4 class="text-3xl font-bold mb-4">' + f.name + '</h4><p class="text-gray-500 text-2xl">' + f.desc + '</p></div></div>';
+            return '<div class="bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer hover:shadow-xl transition-all" onclick="window.openModal(\'' + f.modal + '\')"><div class="h-72 overflow-hidden"><img src="' + f.image + '" class="!w-full !h-full !object-cover !block" alt="' + f.name + '｜大花農場玫瑰料理"></div><div class="p-10 text-center"><h4 class="text-3xl font-bold mb-4">' + f.name + '</h4><p class="text-gray-500 text-2xl">' + f.desc + '</p></div></div>';
         }).join('');
     }
 })();

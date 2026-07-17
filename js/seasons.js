@@ -45,7 +45,7 @@
         seasonContainer.innerHTML = window.DATA.seasons.map(function(s, i) {
             var num = '0' + (i + 1);
             return '<div class="group relative flex-1 h-[300px] md:h-full overflow-hidden transition-all duration-700 ease-out hover:flex-[3] cursor-default border-b md:border-b-0 md:border-r border-white/20 last:border-0 rounded-2xl md:rounded-none first:rounded-t-2xl md:first:rounded-l-2xl last:rounded-b-2xl md:last:rounded-r-2xl z-0">'
-                + '<img src="' + s.image + '" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110 filter brightness-[0.85] group-hover:brightness-100 -z-20">'
+                + '<img src="' + s.image + '" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110 filter brightness-[0.85] group-hover:brightness-100 -z-20" alt="' + s.name + '｜大花農場四季花景">'
                 + '<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 transition-opacity -z-10"></div>'
                 + '<div class="absolute top-6 left-8 z-20 pointer-events-none"><span class="text-white/50 group-hover:text-white/70 text-6xl md:text-8xl font-serif font-bold transition-all duration-500 select-none drop-shadow-xl">' + num + '</span></div>'
                 + '<div class="absolute bottom-0 left-0 p-8 md:p-12 z-30"><div class="w-full md:w-[360px] relative">'
@@ -114,7 +114,7 @@
         } else {
             grid.innerHTML = pageData.map(function(f) {
                 return '<div class="group perspective-1000 w-full aspect-[3/4] cursor-pointer" onclick="this.querySelector(\'.flip-inner\').classList.toggle(\'is-flipped\')"><div class="flip-inner relative w-full h-full transition-all duration-700 transform-style-3d group-hover:rotate-y-180 shadow-lg hover:shadow-2xl rounded-2xl">'
-                    + '<div class="absolute inset-0 w-full h-full backface-hidden rounded-2xl overflow-hidden bg-gray-100"><img src="' + f.img + '" class="!w-full !h-full !object-cover !block"><div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3 md:opacity-0 md:group-hover:opacity-0"><span class="text-white text-sm font-bold drop-shadow">' + f.name + '</span></div></div>'
+                    + '<div class="absolute inset-0 w-full h-full backface-hidden rounded-2xl overflow-hidden bg-gray-100"><img src="' + f.img + '" class="!w-full !h-full !object-cover !block" alt="' + f.name + '｜大花農場花曆"><div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3 md:opacity-0 md:group-hover:opacity-0"><span class="text-white text-sm font-bold drop-shadow">' + f.name + '</span></div></div>'
                     + '<div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl bg-[#3a5a40] text-white p-5 flex flex-col shadow-xl text-left">'
                     + '<div class="flex justify-end mb-1 shrink-0"><span class="text-[10px] bg-white/20 px-3 py-1 rounded-full tracking-wider">' + f.month + '</span></div>'
                     + '<div class="flex-grow flex flex-col justify-center"><h4 class="text-xl md:text-2xl font-serif font-bold mb-3 leading-snug shrink-0">' + f.name + '</h4><div class="w-10 h-[2px] bg-accent mb-3 shrink-0"></div><p class="text-sm md:text-base leading-relaxed opacity-90 font-light line-clamp-4 md:line-clamp-5">' + (f.desc || '') + '</p></div>'

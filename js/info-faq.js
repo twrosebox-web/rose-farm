@@ -39,7 +39,7 @@
 
         if (type === 'image') {
             return '<div class="mt-1">'
-                + (item.img ? '<img src="' + item.img + '" class="!w-full !h-auto !rounded-xl !mb-3 !block" alt="">' : '')
+                + (item.img ? '<img src="' + item.img + '" class="!w-full !h-auto !rounded-xl !mb-3 !block" alt="' + (item.alt || item.q || '大花農場參觀資訊') + '">' : '')
                 + (item.a ? '<p>' + item.a + '</p>' : '')
                 + '</div>';
         }

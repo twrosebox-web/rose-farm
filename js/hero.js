@@ -12,7 +12,7 @@
 
     slider.innerHTML = slides.map(function(s, i) {
         return '<div class="hero-slide absolute inset-0 transition-opacity duration-1000 ' + (i === 0 ? 'opacity-100' : 'opacity-0') + '">'
-            + '<img src="' + s.image + '" class="!w-full !h-full !object-cover !block animate-zoom">'
+            + '<img src="' + s.image + '" class="!w-full !h-full !object-cover !block animate-zoom" alt="' + (i === 0 ? '屏東九如大花玫瑰休閒農場園區景觀' : '') + '">'
             + '<div class="absolute inset-0 bg-black/30"></div>'
             + '</div>';
     }).join('');
