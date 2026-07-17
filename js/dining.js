@@ -16,7 +16,7 @@
                 + (isRec ? '<div class="absolute top-6 right-6 bg-[#d06765] text-white text-base font-bold px-6 py-2 rounded-full shadow-lg z-10 animate-pulse">人氣推薦</div>' : '')
                 + '<div class="absolute bottom-8 left-10"><h4 class="text-white text-5xl font-serif font-bold drop-shadow-md">' + opt.title + '</h4></div></div>'
                 + '<div class="p-12 flex flex-col items-center text-center flex-grow">'
-                + '<span class="text-[#3a5a40] text-lg font-bold tracking-[0.3em] uppercase mb-8 opacity-70">Organic Rose Cuisine</span>'
+                + '<span class="text-[#3a5a40] text-lg font-bold tracking-[0.3em] uppercase mb-8 opacity-70">Natural Farming Rose Cuisine</span>'
                 + '<p class="text-gray-600 text-2xl mb-10 leading-relaxed font-light line-clamp-3">' + opt.desc + '</p>'
                 + '<div class="mt-auto w-full"><div class="w-20 h-0.5 bg-[#d06765]/20 mx-auto mb-8"></div>'
                 + '<div class="text-[#d06765] font-serif font-bold text-5xl mb-8 flex items-baseline justify-center gap-2">' + opt.price + ' <span class="text-xl text-gray-400 font-sans font-normal tracking-wider">' + (opt.subPrice || '') + '</span></div>'

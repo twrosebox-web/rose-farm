@@ -37,7 +37,7 @@ window.DATA = {
     features: [
         { id: "01", titleEn: "Environment", title: "平原上的私房秘境", desc: "無需翻山越嶺，就能抵達這片受到大武山湧泉滋養的淨土。 這是您口袋名單裡的珍寶，寬闊、純淨、隱密。 帶朋友來這裡，展現的是您獨到的選點品味，更是對旅遊品質的堅持。", images: ["https://i.meee.com.tw/RZEteCI.webp","https://i.meee.com.tw/rZ4um7i.webp","https://i.meee.com.tw/GhsxGer.webp","https://i.meee.com.tw/1gxiu1W.webp","https://i.meee.com.tw/Qt4jZdk.webp","https://i.meee.com.tw/tHkwMxb.webp"], reverse: false },
         { id: "02", titleEn: "Lifestyle", title: "極致的純淨標準", desc: "在這裡，您可以收起對農藥的焦慮。 我們堅持草生栽培與生態共生，為的是讓您與孩子能毫無防備地親近土地。 不用煩惱食農教育去哪找，這座生機盎然的農場，就是大自然最生動的教室。", images: ["https://i.meee.com.tw/KUyn0j1.webp","https://i.meee.com.tw/p8BrJVo.webp","https://i.meee.com.tw/eNkqsbz.webp","https://i.meee.com.tw/buFEk4s.webp","https://i.meee.com.tw/OLQB3RA.webp","https://i.meee.com.tw/kxGNIEy.webp"], reverse: true },
-        { id: "03", titleEn: "Experience", title: "餐桌上的花海", desc: "賞花，不只在眼底，更在舌尖。 不必碰運氣追花季，我們已將有機玫瑰化為市面罕見的創意料理。 這份專為懂吃的您準備的驚喜，請直接入座，用味蕾感受這份奢華的款待。", images: ["https://images.unsplash.com/photo-1518709594023-6eab9bab7b23?w=1200&q=80","https://images.unsplash.com/photo-1585032226651-759b368d7246?w=1200&q=80","https://images.unsplash.com/photo-1560155016-bd4879ae8f21?w=1200&q=80"], reverse: false }
+        { id: "03", titleEn: "Experience", title: "餐桌上的花海", desc: "賞花，不只在眼底，更在舌尖。 不必碰運氣追花季，我們已將自然農法栽培的食用玫瑰化為市面罕見的創意料理。 這份專為懂吃的您準備的驚喜，請直接入座，用味蕾感受這份奢華的款待。", images: ["https://images.unsplash.com/photo-1518709594023-6eab9bab7b23?w=1200&q=80","https://images.unsplash.com/photo-1585032226651-759b368d7246?w=1200&q=80","https://images.unsplash.com/photo-1560155016-bd4879ae8f21?w=1200&q=80"], reverse: false }
     ],
 
     // ========== Bento Grid ==========
@@ -46,7 +46,7 @@ window.DATA = {
         { type: 'link', link: 'dining', title: '吃一口花香', desc: "品一口全台獨創的「玫瑰花壽司」，味蕾會記得這個味道。", img: "https://i.meee.com.tw/46xL6hH.webp", col: 'md:col-span-1 md:row-span-1', tags: ['#特色蔬食', '#創意料理'] },
         { type: 'info', title: '營業時間', time: '09:00 - 17:00', note: '週一固定公休', col: 'md:col-span-1 md:row-span-1' },
         { type: 'link', link: 'diy', title: '把香味帶回家', desc: "親手煮一罐玫瑰醬，把屏東的陽光封存起來。", img: "https://i.meee.com.tw/BEJHVnh.jpg", col: 'md:col-span-1 md:row-span-1', tags: ['#手作溫度', '#回憶打包'] },
-        { type: 'modal', modal: 'modal-tour', title: '食農教育', desc: "在有機的土地上，不用擔心赤腳踩地。脫下鞋子，我們一起向自然學習。", img: "https://i.meee.com.tw/4ZOOMP4.jpg", col: 'md:col-span-2 md:row-span-1', tags: ['#有機認證', '#自然教室'] },
+        { type: 'modal', modal: 'modal-tour', title: '食農教育', desc: "在自然農法照顧的田園裡，脫下鞋子，我們一起向自然學習。", img: "https://i.meee.com.tw/4ZOOMP4.jpg", col: 'md:col-span-2 md:row-span-1', tags: ['#自然農法', '#自然教室'] },
         { type: 'closed', title: '星空露營', desc: "我們正打造在星空下入睡的地方", img: "https://i.meee.com.tw/3HB6tCG.webp", col: 'md:col-span-1 md:row-span-1', tags: ['#懶人式'] },
         { type: 'modal', modal: 'modal-corporate', title: '多元場地空間', desc: "戶外有草皮與舞台可辦夢幻婚禮，室內備有投影設備適合會議。滿足您對聚會的所有想像。", img: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1200&q=80", col: 'md:col-span-4 md:row-span-1', tags: ['#戶外婚禮', '#會議空間'] }
     ],
@@ -70,7 +70,7 @@ window.DATA = {
         { name: '藍花藤季', period: '春季 (2-4月)', desc: '夢幻的「紫色花瀑」在春日甦醒，藍花藤全盛綻放，與全園翠綠交織成最迷人的風景。', image: "https://i.meee.com.tw/8XHHWq5.webp" },
         { name: '綠意走廊', period: '夏季 (5-8月)', desc: '在屏東的艷陽下，長達百公尺的綠色走廊是最涼爽的避風港，感受草木生長最旺盛的生命力。', image: "https://i.meee.com.tw/hKBueVG.webp" },
         { name: '垂枝茉莉', period: '秋季 (9-10月)', desc: '玫瑰正在蓄能，此時由「垂枝茉莉」接棒，潔白如蝶的小花垂墜飛舞，帶動入秋後的輕盈氣息。', image: "https://i.meee.com.tw/Ak3rkQu.webp" },
-        { name: '冬日玫瑰', period: '冬季 (11-1月)', desc: '大花玫瑰回歸的主場。微涼季節，品嚐第一波綻放的鮮採有機玫瑰，體驗品質最高雅的芬芳。', image: "https://i.meee.com.tw/daJBaEH.webp" }
+        { name: '冬日玫瑰', period: '冬季 (11-1月)', desc: '大花玫瑰回歸的主場。微涼季節，品嚐第一波以自然農法栽培的鮮採玫瑰，體驗品質最高雅的芬芳。', image: "https://i.meee.com.tw/daJBaEH.webp" }
     ],
 
     // ========== 生態 ==========
@@ -85,7 +85,7 @@ window.DATA = {
 
     // ========== 服務 ==========
     services: [
-        { modal: 'modal-picking', title: '有機玫瑰採摘體驗', price: '按朵計算', img: "https://i.meee.com.tw/GgCVgJR.webp", desc: "親手摘下晨曦綻放的有機玫瑰。", tags: ['🌹 每日開放'] },
+        { modal: 'modal-picking', title: '自然農法玫瑰採摘體驗', price: '按朵計算', img: "https://i.meee.com.tw/GgCVgJR.webp", desc: "親手摘下晨曦綻放、以自然農法栽培的玫瑰。", tags: ['🌹 每日開放'] },
         { modal: 'modal-wedding', title: '玫瑰莊園・戶外婚禮', price: '婚禮專案', img: "https://i.meee.com.tw/XEXIaZY.webp", desc: "屏東最美的西式證婚場地。", tags: ['💍 證婚/宴客'] },
         { modal: 'modal-tour', title: '五感療癒・生態導覽', price: '$1,500/導覽員', img: "https://i.meee.com.tw/nooP50M.webp", desc: "關於土地的生命課程。", tags: ['⏱️ 30分鐘', '👥 15人成團'] },
         { modal: 'modal-corporate', title: '多元場地租借', price: '場地報價', img: "https://i.meee.com.tw/CFK48OM.webp", desc: "企業訓練、抓週派對。", tags: ['🎤 視聽設備'] },
@@ -171,7 +171,7 @@ window.DATA = {
                 { q: "採花需要預約嗎？", a: "不需要。請直接至展售室領取籃子即可入園體驗。" },
                 { q: "採摘費用？", a: "每朵 NT$20。" },
                 { q: "可以只拍照不採嗎？", a: "可以！歡迎在花田步道間拍照，但請勿折損花枝。" },
-                { q: "玫瑰可以吃嗎？", a: "可以。我們採有機種植方式管理，屬食用玫瑰。" },
+                { q: "玫瑰可以吃嗎？", a: "可以。我們採自然農法管理，並選用食用玫瑰品種。" },
                 { q: "雨天可以採花嗎？", a: "可採，但田間可能泥濘，建議依現場狀況評估。" },
                 { q: "可否整枝帶走？", a: "僅採花朵，枝條不可帶走。" }
             ]},
