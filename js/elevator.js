@@ -10,9 +10,11 @@
         var btn = document.getElementById('elevator-toggle');
         if (c.classList.contains('nav-open')) {
             c.classList.remove('nav-open');
+            btn.setAttribute('aria-expanded', 'false');
             btn.innerHTML = '☰';
         } else {
             c.classList.add('nav-open');
+            btn.setAttribute('aria-expanded', 'true');
             btn.innerHTML = '✕';
         }
     };
@@ -31,11 +33,11 @@
 
         // 「回官網首頁」特殊處理：填色按鈕，跳轉到 Mshop
         if (n.id === '_home_') {
-            return '<a href="' + homeUrl + '" class="nav-item flex items-center gap-3 h-12 md:h-16 pl-2 pr-5 md:pr-7 rounded-full text-base md:text-xl font-bold shadow-md hover:-translate-x-1 origin-right transition-all no-underline text-white" style="background:' + color + ';opacity:0;transform:translateY(20px);pointer-events:none;">'
+            return '<a href="' + homeUrl + '" class="nav-item flex items-center gap-3 h-12 md:h-16 pl-2 pr-5 md:pr-7 rounded-full text-base md:text-xl font-bold shadow-md hover:-translate-x-1 origin-right transition-all no-underline text-white" style="background:' + color + ';">'
                 + '<span class="shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-lg md:text-xl bg-white/20">' + icon + '</span>' + n.name + '</a>';
         }
         // 一般按鈕：白底 + 彩色圖示圈 + 左側色條
-        return '<button onclick="window.scrollToSection(\'' + n.id + '\');window.toggleElevator()" class="nav-item flex items-center gap-3 h-12 md:h-16 pl-2 pr-5 md:pr-7 bg-white rounded-full text-base md:text-xl font-bold text-gray-700 shadow-md hover:-translate-x-1 hover:shadow-lg origin-right transition-all border-l-4" style="border-left-color:' + color + ';opacity:0;transform:translateY(20px);pointer-events:none;">'
+        return '<button onclick="window.scrollToSection(\'' + n.id + '\');window.toggleElevator()" class="nav-item flex items-center gap-3 h-12 md:h-16 pl-2 pr-5 md:pr-7 bg-white rounded-full text-base md:text-xl font-bold text-gray-700 shadow-md hover:-translate-x-1 hover:shadow-lg origin-right transition-all border-l-4" style="border-left-color:' + color + ';">'
             + iconCircle + '<span style="color:' + color + ';">' + n.name + '</span></button>';
     }).join('');
 })();
