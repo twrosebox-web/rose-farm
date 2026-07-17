@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://twrosebox-web.github.io/rose-farm/sitemap.xml
