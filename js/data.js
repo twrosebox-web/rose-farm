@@ -86,9 +86,9 @@ window.DATA = {
     // ========== 服務 ==========
     services: [
         { modal: 'modal-picking', title: '自然農法玫瑰採摘體驗', price: '按朵計算', img: "https://i.meee.com.tw/GgCVgJR.webp", desc: "親手摘下晨曦綻放、以自然農法栽培的玫瑰。", tags: ['🌹 每日開放'] },
-        { modal: 'modal-wedding', title: '玫瑰莊園・戶外婚禮', price: '婚禮專案', img: "https://i.meee.com.tw/XEXIaZY.webp", desc: "屏東最美的西式證婚場地。", tags: ['💍 證婚/宴客'] },
-        { modal: 'modal-tour', title: '五感療癒・生態導覽', price: '$1,500/導覽員', img: "https://i.meee.com.tw/nooP50M.webp", desc: "關於土地的生命課程。", tags: ['⏱️ 30分鐘', '👥 15人成團'] },
-        { modal: 'modal-corporate', title: '多元場地租借', price: '場地報價', img: "https://i.meee.com.tw/CFK48OM.webp", desc: "企業訓練、抓週派對。", tags: ['🎤 視聽設備'] },
+        { modal: 'modal-wedding', title: '玫瑰莊園・戶外婚禮', price: '$78,000/場', img: "https://i.meee.com.tw/XEXIaZY.webp", desc: "屏東最美的西式證婚場地。", tags: ['💍 證婚/宴客'], facts: ['👥 最多 300 人', '⏱️ 當日 8–20 時場佈', '🚚 隔日 8–12 時撤場'] },
+        { modal: 'modal-tour', title: '五感療癒・生態導覽', price: '$1,500/導覽員', img: "https://i.meee.com.tw/nooP50M.webp", desc: "關於土地的生命課程。", tags: ['🌿 團體導覽'], facts: ['⏱️ 30 分鐘', '👥 15–30 人'] },
+        { modal: 'modal-corporate', title: '多元場地租借', price: '專人報價', img: "https://i.meee.com.tw/CFK48OM.webp", desc: "企業訓練、抓週派對。", tags: ['🎤 視聽設備'], facts: ['⏱️ 上午 08–12 時', '⏱️ 下午 13–16 時', '👥 人數請洽詢'] },
         { status: 'coming-soon', modal: 'modal-camping-teaser', title: '玫瑰星空露營', price: '籌備中', img: "https://i.meee.com.tw/oqSBjjN.webp", desc: "屏東平原的星空秘境。在玫瑰花香中入睡，即將實現。", tags: ['⛺ Coming Soon'] }
     ],
 
