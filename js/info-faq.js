@@ -28,10 +28,10 @@
 
         if (type === 'table' && item.rows) {
             var rows = item.rows.map(function(r) {
-                return '<div class="grid grid-cols-[80px_1fr] gap-3 py-3 border-b border-gray-100 last:border-0 items-baseline">'
+                return '<div class="grid grid-cols-[72px_1fr] gap-2 py-2 border-b border-gray-100 last:border-0 items-baseline">'
                     + '<span class="font-bold text-[#3a5a40]">' + (r.label || '') + '</span>'
-                    + '<div><span class="text-gray-800 font-bold text-xl">' + (r.value || '') + '</span>'
-                    + (r.note ? '<span class="text-base text-[#d06765] ml-2">' + r.note + '</span>' : '')
+                    + '<div><span class="text-gray-800 font-bold text-lg">' + (r.value || '') + '</span>'
+                    + (r.note ? '<span class="text-sm text-[#d06765] ml-2">' + r.note + '</span>' : '')
                     + '</div></div>';
             }).join('');
             return '<div class="w-full mt-1">' + rows + '</div>';
@@ -64,15 +64,15 @@
         if (!activeCat) return;
 
         tabs.innerHTML = data.map(function(c) {
-            return '<button onclick="window.renderQA(\'' + c.id + '\')" class="px-5 py-2 rounded-full text-base font-bold transition-all border '
+            return '<button onclick="window.renderQA(\'' + c.id + '\')" class="px-4 py-1.5 rounded-full text-sm md:text-base font-bold transition-all border '
                 + (c.id === catId ? 'bg-primary text-white border-primary shadow-md transform scale-105' : 'bg-white text-gray-500 border-gray-200 hover:border-primary hover:text-primary')
                 + '">' + c.name + '</button>';
         }).join('');
 
         grid.innerHTML = activeCat.list.map(function(item) {
-            return '<div class="bg-white p-6 rounded-2xl border border-gray-100 hover:border-accent/30 hover:shadow-md transition-all duration-300 h-full flex flex-col justify-start">'
-                + '<h4 class="font-bold text-gray-900 text-2xl mb-3 flex items-start gap-3 shrink-0 leading-snug"><span class="text-accent shrink-0 font-serif mt-0.5">Q.</span><span>' + item.q + '</span></h4>'
-                + '<div class="max-h-[300px] overflow-y-auto pr-2 text-gray-600 text-xl leading-relaxed pl-7 border-l-4 border-gray-100">' + renderAnswer(item) + '</div>'
+            return '<div class="bg-white p-4 md:p-5 rounded-xl border border-gray-100 hover:border-accent/30 hover:shadow-md transition-all duration-300 self-start">'
+                + '<h4 class="font-bold text-gray-900 text-xl mb-2 flex items-start gap-2 leading-snug"><span class="text-accent shrink-0 font-serif">Q.</span><span>' + item.q + '</span></h4>'
+                + '<div class="max-h-[240px] overflow-y-auto pr-1 text-gray-600 text-lg leading-7 pl-4 border-l-2 border-gray-100">' + renderAnswer(item) + '</div>'
                 + '</div>';
         }).join('');
     };
