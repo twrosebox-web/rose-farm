@@ -69,11 +69,14 @@
                 + '">' + c.name + '</button>';
         }).join('');
 
-        grid.innerHTML = activeCat.list.map(function(item) {
-            return '<div class="bg-white p-4 md:p-5 rounded-xl border border-gray-100 hover:border-accent/30 hover:shadow-md transition-all duration-300 self-start">'
-                + '<h4 class="font-bold text-gray-900 text-xl mb-2 flex items-start gap-2 leading-snug"><span class="text-accent shrink-0 font-serif">Q.</span><span>' + item.q + '</span></h4>'
-                + '<div class="max-h-[240px] overflow-y-auto pr-1 text-gray-600 text-lg leading-7 pl-4 border-l-2 border-gray-100">' + renderAnswer(item) + '</div>'
-                + '</div>';
+        grid.innerHTML = activeCat.list.map(function(item, index) {
+            return '<details class="qa-accordion bg-white rounded-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:border-primary/30"' + (index === 0 ? ' open' : '') + '>'
+                + '<summary class="cursor-pointer px-5 py-3.5 md:px-6 md:py-4 flex items-center justify-between gap-4 select-none">'
+                + '<span class="font-bold text-gray-900 text-lg md:text-xl flex items-center gap-3 leading-snug"><span class="text-accent shrink-0 font-serif">Q.</span><span>' + item.q + '</span></span>'
+                + '<span class="qa-toggle shrink-0 w-8 h-8 rounded-full bg-[#3a5a40]/5 text-[#3a5a40] flex items-center justify-center text-xl font-light transition-all duration-300">＋</span>'
+                + '</summary>'
+                + '<div class="px-5 pb-4 md:px-6 md:pb-5"><div class="text-gray-600 text-base md:text-lg leading-7 pl-8 md:pl-10 pr-2">' + renderAnswer(item) + '</div></div>'
+                + '</details>';
         }).join('');
     };
 

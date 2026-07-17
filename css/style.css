@@ -77,3 +77,17 @@ html { font-size: 13px; }
 .fb-2 { animation-delay: 0.5s; }
 .fb-3 { animation-delay: 1.2s; }
 .fb-4 { animation-delay: 0.8s; }
+
+/* ---------- FAQ 緊密收合列 ---------- */
+#render-qa-grid summary { list-style: none; }
+#render-qa-grid summary::-webkit-details-marker { display: none; }
+#render-qa-grid .qa-accordion[open] {
+    border-color: rgba(58, 90, 64, 0.3);
+    background: #fdfbf7;
+    box-shadow: 0 8px 24px rgba(58, 90, 64, 0.08);
+}
+#render-qa-grid .qa-accordion[open] .qa-toggle {
+    transform: rotate(45deg);
+    background: #3a5a40;
+    color: #fff;
+}
