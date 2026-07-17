@@ -7,7 +7,7 @@
 window.DATA = {
 
     // ========== 你的 Mshop 官網網址（回首頁按鈕用） ==========
-    homeUrl: "https://f88.myorganic.org.tw",
+    homeUrl: "https://www.rosebox.com.tw",
 
     // ========== 全站常改資料（票價、電話、餐廳圖片）==========
     // ★ 農場的人最常改這一區
