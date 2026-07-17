@@ -7,4 +7,5 @@ Thumbs.db
 # Local runtime files
 *.log
 __pycache__/
-
+node_modules/
+outputs/
