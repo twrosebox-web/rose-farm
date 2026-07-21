@@ -74,9 +74,14 @@ assert.equal(api.valuesEqual('200', 200, 'number'), true);
 assert.equal(api.valuesEqual('false', false, 'boolean'), true);
 
 const html = fs.readFileSync(new URL('../admin.html', import.meta.url), 'utf8');
-for (const id of ['admin-login', 'admin-nav', 'editor-content', 'save-button', 'preview-button', 'publish-button', 'confirm-modal']) {
+for (const id of ['admin-login', 'admin-nav', 'sidebar-toggle', 'editor-content', 'save-button', 'preview-button', 'publish-button', 'confirm-modal']) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
 }
 assert.match(html, /js\/admin\.js/);
+
+const css = fs.readFileSync(new URL('../css/admin.css', import.meta.url), 'utf8');
+assert.match(css, /\.app-shell\.sidebar-collapsed \.sidebar/);
+assert.match(css, /@media \(max-width: 980px\)/);
+assert.match(css, /\.mobile-nav-hint/);
 
 console.log(`Admin tests passed (${entries.length} demo fields)`);

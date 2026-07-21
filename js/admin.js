@@ -231,11 +231,31 @@
     function renderNav() {
         var html = NAV_ITEMS.map(function (item) {
             var count = state.entries.filter(function (entry) { return matchesCategory(entry, item.id); }).length;
-            return '<button class="nav-button' + (state.activeSection === item.id ? ' active' : '') + '" type="button" data-section="' + item.id + '">' +
+            return '<button class="nav-button' + (state.activeSection === item.id ? ' active' : '') + '" type="button" data-section="' + item.id + '" aria-label="' + escapeAttr(item.label) + '" title="' + escapeAttr(item.label) + '">' +
                 '<span>' + item.icon + '</span><span>' + escapeHtml(item.label) + '</span><span class="nav-count">' + count + '</span></button>';
         }).join('');
         byId('admin-nav').innerHTML = html;
-        byId('mobile-nav').innerHTML = html;
+        byId('mobile-nav').innerHTML = '<span class="mobile-nav-hint">左右滑動</span>' + html;
+    }
+
+    function sidebarPreference() {
+        try { return window.localStorage.getItem('roseFarmAdminSidebarCollapsed') === 'true'; }
+        catch (error) { return false; }
+    }
+
+    function setSidebarCollapsed(collapsed, persist) {
+        var app = byId('admin-app');
+        var button = byId('sidebar-toggle');
+        if (!app || !button) return;
+        app.classList.toggle('sidebar-collapsed', !!collapsed);
+        button.textContent = collapsed ? '›' : '‹';
+        button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        button.setAttribute('aria-label', collapsed ? '展開側邊欄' : '收合側邊欄');
+        button.title = collapsed ? '展開側邊欄' : '收合側邊欄';
+        if (persist) {
+            try { window.localStorage.setItem('roseFarmAdminSidebarCollapsed', collapsed ? 'true' : 'false'); }
+            catch (error) { /* 私密模式下無法儲存時，仍保留本次畫面狀態。 */ }
+        }
     }
 
     function displayValue(value, type) {
@@ -780,6 +800,9 @@
         byId('preview-button').addEventListener('click', previewDraft);
         byId('publish-button').addEventListener('click', function () { publishDraft(false); });
         byId('logout-button').addEventListener('click', logout);
+        byId('sidebar-toggle').addEventListener('click', function () {
+            setSidebarCollapsed(!byId('admin-app').classList.contains('sidebar-collapsed'), true);
+        });
         byId('confirm-action').addEventListener('click', confirmAction);
         [byId('confirm-close'), byId('confirm-cancel')].forEach(function (button) { button.addEventListener('click', closeConfirm); });
         byId('confirm-modal').addEventListener('mousedown', function (event) { event.currentTarget.dataset.downOnBackdrop = event.target === event.currentTarget ? '1' : '0'; });
@@ -791,6 +814,7 @@
     function init() {
         if (!byId('admin-login')) return;
         bindEvents();
+        setSidebarCollapsed(sidebarPreference(), false);
         if (!endpoint()) {
             byId('demo-button').classList.remove('hidden');
             byId('login-message').textContent = '尚未連接 Apps Script，可先查看展示介面。';
