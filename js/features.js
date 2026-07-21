@@ -9,7 +9,7 @@
 
     container.innerHTML = window.DATA.features.map(function(f, fi) {
         var slidesHTML = f.images.map(function(src, si) {
-            return '<img src="' + src + '" class="feature-slide-' + fi + ' !absolute !inset-0 !w-full !h-full !object-cover !block transition-opacity duration-1000 ' + (si === 0 ? 'opacity-100' : 'opacity-0') + '" style="z-index:' + (10 - si) + ';" alt="' + f.title + '">';
+            return '<img src="' + src + '" data-content-key="features.' + fi + '.images.' + si + '" class="feature-slide-' + fi + ' !absolute !inset-0 !w-full !h-full !object-cover !block transition-opacity duration-1000 ' + (si === 0 ? 'opacity-100' : 'opacity-0') + '" style="z-index:' + (10 - si) + ';" alt="' + f.title + '">';
         }).join('');
 
         return '<div class="flex flex-col md:flex-row items-center gap-16 md:gap-24 mb-32 last:mb-0 ' + (f.reverse ? 'md:flex-row-reverse' : '') + '">'

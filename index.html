@@ -277,7 +277,7 @@
             </div>
             <div class="flex flex-col gap-8">
                 <div id="gallery-main-container" class="relative w-full aspect-[3/2] rounded-3xl overflow-hidden shadow-2xl bg-gray-100 group">
-                    <img id="main-gallery-img" src="" class="absolute inset-0 w-full h-full object-cover cursor-zoom-in transition-opacity duration-700 ease-in-out" style="opacity:1;" onclick="window.handleImageClick()" alt="大花玫瑰休閒農場園區相簿">
+                    <img id="main-gallery-img" src="" data-content-key="gallery.0.image" class="absolute inset-0 w-full h-full object-cover cursor-zoom-in transition-opacity duration-700 ease-in-out" style="opacity:1;" onclick="window.handleImageClick()" alt="大花玫瑰休閒農場園區相簿">
                     <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-12 pointer-events-none">
                         <h3 id="main-gallery-title" class="text-white font-bold text-4xl font-serif tracking-wide"></h3>
                     </div>
@@ -439,9 +439,9 @@
             <!-- 招牌鍋介紹（左圖右文）-->
             <div class="flex flex-col lg:flex-row gap-20 items-center mb-40">
                 <div class="lg:w-1/2 relative h-[500px] lg:h-[750px] w-full flex items-center justify-center">
-                    <div class="absolute w-80 h-80 lg:w-[600px] lg:h-[600px] rounded-full overflow-hidden border-8 border-white shadow-2xl z-20 transition-transform duration-700 hover:scale-105"><img id="dining-img-0" src="https://i.meee.com.tw/bbEKYrF.webp" class="!absolute !inset-0 !w-full !h-full !object-cover !block" alt="大花農場玫瑰創意料理"></div>
-                    <div class="absolute bottom-4 right-4 lg:bottom-0 lg:-right-4 w-56 h-56 lg:w-[300px] lg:h-[300px] rounded-[40px] overflow-hidden border-8 border-white shadow-xl z-30 rotate-6 hover:rotate-0 transition-all duration-500"><img id="dining-img-1" src="https://i.meee.com.tw/pH9AFHE.webp" class="!absolute !inset-0 !w-full !h-full !object-cover !block" alt="大花農場玫瑰餐廳特色餐點"></div>
-                    <div class="absolute top-4 left-4 lg:top-0 lg:-left-4 w-40 h-40 lg:w-[320px] lg:h-[320px] rounded-full overflow-hidden border-8 border-white shadow-lg z-40 -rotate-12 animate-float hover:scale-110 transition-all duration-500 cursor-pointer"><img id="dining-img-2" src="https://i.meee.com.tw/Es9hQP8.webp" class="!absolute !inset-0 !w-full !h-full !object-cover !block opacity-90" alt="屏東九如大花農場景觀餐廳"></div>
+                    <div class="absolute w-80 h-80 lg:w-[600px] lg:h-[600px] rounded-full overflow-hidden border-8 border-white shadow-2xl z-20 transition-transform duration-700 hover:scale-105"><img id="dining-img-0" src="https://i.meee.com.tw/bbEKYrF.webp" data-content-key="siteConfig.diningImages.0" class="!absolute !inset-0 !w-full !h-full !object-cover !block" alt="大花農場玫瑰創意料理"></div>
+                    <div class="absolute bottom-4 right-4 lg:bottom-0 lg:-right-4 w-56 h-56 lg:w-[300px] lg:h-[300px] rounded-[40px] overflow-hidden border-8 border-white shadow-xl z-30 rotate-6 hover:rotate-0 transition-all duration-500"><img id="dining-img-1" src="https://i.meee.com.tw/pH9AFHE.webp" data-content-key="siteConfig.diningImages.1" class="!absolute !inset-0 !w-full !h-full !object-cover !block" alt="大花農場玫瑰餐廳特色餐點"></div>
+                    <div class="absolute top-4 left-4 lg:top-0 lg:-left-4 w-40 h-40 lg:w-[320px] lg:h-[320px] rounded-full overflow-hidden border-8 border-white shadow-lg z-40 -rotate-12 animate-float hover:scale-110 transition-all duration-500 cursor-pointer"><img id="dining-img-2" src="https://i.meee.com.tw/Es9hQP8.webp" data-content-key="siteConfig.diningImages.2" class="!absolute !inset-0 !w-full !h-full !object-cover !block opacity-90" alt="屏東九如大花農場景觀餐廳"></div>
                 </div>
                 <div class="lg:w-1/2 flex flex-col justify-center px-4">
                     <span class="text-accent text-xl font-bold tracking-[0.4em] uppercase mb-6">The Art of Rose Cuisine</span>
@@ -457,7 +457,7 @@
             <div class="flex flex-col lg:flex-row-reverse gap-20 items-center mb-40">
                 <div class="lg:w-1/2 relative">
                     <div class="relative z-10 rounded-[60px] overflow-hidden shadow-2xl border-[12px] border-white transition-transform duration-1000 hover:scale-[1.02]">
-                        <img id="dining-img-3" src="https://i.meee.com.tw/krq8ccF.webp" class="!w-full !h-[400px] md:!h-[600px] !object-cover !block" alt="招牌玫瑰白玉鍋">
+                        <img id="dining-img-3" src="https://i.meee.com.tw/krq8ccF.webp" data-content-key="siteConfig.diningImages.3" class="!w-full !h-[400px] md:!h-[600px] !object-cover !block" alt="招牌玫瑰白玉鍋">
                         <div class="absolute bottom-10 left-10 bg-white/90 backdrop-blur-md px-10 py-5 rounded-full shadow-lg"><p class="text-primary font-bold tracking-widest text-2xl">SIGNATURE DISH</p></div>
                     </div>
                 </div>
@@ -729,6 +729,7 @@
 <script src="js/data-modals.js"></script>
 <script src="js/modal.js"></script>
 <script src="js/cloud-config.js"></script>
+<script src="js/draft-inspector.js"></script>
 <script src="js/cloud-data.js"></script>
 <script src="js/elevator.js"></script>
 <script src="js/hero.js"></script>

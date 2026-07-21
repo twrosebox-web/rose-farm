@@ -46,6 +46,7 @@ const editorRows = [
 ];
 const editorSheet = {
   getLastRow: () => editorRows.length + 6,
+  getSheetId: () => 2026072101,
   getRange(row, column, rowCount = 1, columnCount = 1) {
     return {
       getValues() {
@@ -205,6 +206,8 @@ const draftResult = context.doGet({
 });
 assert.match(draftResult.text, /"mode":"draft"/);
 assert.match(draftResult.text, /"diningContent.signatureTitle":"草稿招牌料理"/);
+assert.match(draftResult.text, /"editorRows":\{"diningContent.ticketNotice":7,"diningContent.signatureTitle":8\}/);
+assert.match(draftResult.text, /"editorSheetId":2026072101/);
 assert.doesNotMatch(draftResult.text, /不應出現/);
 
 const expiredDraftResult = context.doGet({

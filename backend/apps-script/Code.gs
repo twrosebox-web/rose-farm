@@ -123,9 +123,10 @@ function buildDraftPayload_(spreadsheetOverride) {
   const values = {};
   const types = {};
   const updatedAt = {};
+  const editorRows = {};
   const previewTime = new Date().toISOString();
 
-  rows.forEach((row) => {
+  rows.forEach((row, rowIndex) => {
     const rawValue = row[EDITOR.columns.value - EDITOR.columns.value];
     const key = String(row[EDITOR.columns.key - EDITOR.columns.value] || '').trim();
     const type = String(row[EDITOR.columns.type - EDITOR.columns.value] || 'string');
@@ -139,6 +140,7 @@ function buildDraftPayload_(spreadsheetOverride) {
     }
     types[key] = type;
     updatedAt[key] = previewTime;
+    editorRows[key] = EDITOR.dataStartRow + rowIndex;
   });
 
   return {
@@ -147,6 +149,8 @@ function buildDraftPayload_(spreadsheetOverride) {
     values,
     types,
     updatedAt,
+    editorRows,
+    editorSheetId: editor.getSheetId(),
     generatedAt: previewTime,
   };
 }

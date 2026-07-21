@@ -21,6 +21,7 @@
         setTimeout(function() {
             mainImg.src = item.image;
             mainImg.alt = item.title + '｜大花玫瑰休閒農場';
+            mainImg.dataset.contentKey = 'gallery.' + i + '.image';
             titleEl.innerText = item.title;
             mainImg.style.opacity = "1";
         }, 150);
@@ -49,7 +50,7 @@
     var thumbContainer = document.getElementById('render-gallery-thumbs');
     if (thumbContainer) {
         thumbContainer.innerHTML = window.DATA.gallery.map(function(it, i) {
-            return '<div class="aspect-square rounded-lg overflow-hidden cursor-pointer transition-all duration-500 border-2 border-transparent" onclick="window.upG(' + i + ')"><img src="' + it.image + '" class="!w-full !h-full !object-cover !block" alt="' + it.title + '｜大花玫瑰休閒農場"></div>';
+            return '<div class="aspect-square rounded-lg overflow-hidden cursor-pointer transition-all duration-500 border-2 border-transparent" onclick="window.upG(' + i + ')"><img src="' + it.image + '" data-content-key="gallery.' + i + '.image" class="!w-full !h-full !object-cover !block" alt="' + it.title + '｜大花玫瑰休閒農場"></div>';
         }).join('');
     }
     window.upG(0);

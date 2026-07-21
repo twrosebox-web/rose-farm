@@ -9,15 +9,15 @@
     // === 生態拍立得 ===
     var ecoGrid = document.getElementById('render-eco-grid');
     if (ecoGrid && window.DATA.eco) {
-        ecoGrid.innerHTML = window.DATA.eco.map(function(e) {
-            return '<div class="polaroid-card relative w-80 md:w-96 bg-white p-6 pb-28 shadow-xl"><div class="w-full aspect-[4/3] bg-gray-100 mb-8 overflow-hidden border"><img src="' + e.image + '" class="!w-full !h-full !object-cover !block" alt="' + e.name + '｜大花農場生態觀察"></div><div class="text-center absolute bottom-10 left-0 right-0"><strong class="text-3xl block mb-2">' + e.name + '</strong><span class="text-gray-500 text-xl">' + e.desc + '</span></div><div class="absolute -top-6 -right-6 w-20 h-20 bg-accent text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg">' + e.rarity + '</div></div>';
+        ecoGrid.innerHTML = window.DATA.eco.map(function(e, ecoIndex) {
+            return '<div class="polaroid-card relative w-80 md:w-96 bg-white p-6 pb-28 shadow-xl"><div class="w-full aspect-[4/3] bg-gray-100 mb-8 overflow-hidden border"><img src="' + e.image + '" data-content-key="eco.' + ecoIndex + '.image" class="!w-full !h-full !object-cover !block" alt="' + e.name + '｜大花農場生態觀察"></div><div class="text-center absolute bottom-10 left-0 right-0"><strong class="text-3xl block mb-2">' + e.name + '</strong><span class="text-gray-500 text-xl">' + e.desc + '</span></div><div class="absolute -top-6 -right-6 w-20 h-20 bg-accent text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg">' + e.rarity + '</div></div>';
         }).join('');
     }
 
     // === 服務卡片 ===
     var serviceGrid = document.getElementById('render-service-cards');
     if (serviceGrid && window.DATA.services) {
-        serviceGrid.innerHTML = window.DATA.services.map(function(s) {
+        serviceGrid.innerHTML = window.DATA.services.map(function(s, serviceIndex) {
             var isCS = s.status === 'coming-soon';
             var cursor = s.modal ? "cursor-pointer" : "cursor-default";
             var cardCls = isCS
@@ -38,7 +38,7 @@
                 ? '<div class="flex flex-wrap gap-2 mb-8">' + s.facts.map(function(f) { return '<span class="bg-[#3a5a40]/5 text-[#3a5a40] px-3 py-2 rounded-lg text-sm font-bold">' + f + '</span>'; }).join('') + '</div>'
                 : '';
 
-            return '<div class="' + cardCls + '"' + click + '>' + ribbon + '<div class="relative aspect-[4/3] overflow-hidden"><img src="' + s.img + '" class="!absolute !inset-0 !w-full !h-full !object-cover !block transition-transform duration-700 ' + (isCS ? '' : 'group-hover:scale-110') + '" alt="' + s.title + '｜大花玫瑰休閒農場"><div class="absolute top-5 left-5 flex gap-3 z-10">' + (s.tags || []).map(function(t) { return '<span class="' + (isCS ? 'bg-gray-800/70 text-white' : 'bg-white/95 text-primary') + ' backdrop-blur-sm px-5 py-2 rounded-full text-sm font-bold shadow-sm">' + t + '</span>'; }).join('') + '</div></div><div class="p-10"><h3 class="text-3xl font-bold text-gray-800 mb-6 font-serif leading-tight">' + s.title + '</h3><p class="text-gray-600 leading-relaxed mb-8 text-xl line-clamp-3">' + s.desc + '</p>' + factsHtml + '<div class="flex items-center justify-between pt-8 border-t border-gray-200/60"><span class="' + priceCls + '">' + s.price + '</span>' + btnHtml + '</div></div></div>';
+            return '<div class="' + cardCls + '"' + click + '>' + ribbon + '<div class="relative aspect-[4/3] overflow-hidden"><img src="' + s.img + '" data-content-key="services.' + serviceIndex + '.img" class="!absolute !inset-0 !w-full !h-full !object-cover !block transition-transform duration-700 ' + (isCS ? '' : 'group-hover:scale-110') + '" alt="' + s.title + '｜大花玫瑰休閒農場"><div class="absolute top-5 left-5 flex gap-3 z-10">' + (s.tags || []).map(function(t) { return '<span class="' + (isCS ? 'bg-gray-800/70 text-white' : 'bg-white/95 text-primary') + ' backdrop-blur-sm px-5 py-2 rounded-full text-sm font-bold shadow-sm">' + t + '</span>'; }).join('') + '</div></div><div class="p-10"><h3 class="text-3xl font-bold text-gray-800 mb-6 font-serif leading-tight">' + s.title + '</h3><p class="text-gray-600 leading-relaxed mb-8 text-xl line-clamp-3">' + s.desc + '</p>' + factsHtml + '<div class="flex items-center justify-between pt-8 border-t border-gray-200/60"><span class="' + priceCls + '">' + s.price + '</span>' + btnHtml + '</div></div></div>';
         }).join('');
     }
 })();

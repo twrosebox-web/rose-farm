@@ -11,6 +11,7 @@
     var requestFinished = false;
     var timeoutId = null;
     var jsonpScript = null;
+    var latestPayload = null;
     var renderScripts = [
         'js/elevator.js',
         'js/bento.js',
@@ -141,24 +142,36 @@
 
         images = document.querySelectorAll('#render-hero-slider .hero-slide img');
         (window.DATA.heroSlides || []).forEach(function(slide, slideIndex) {
-            if (images[slideIndex]) images[slideIndex].src = slide.image;
+            if (images[slideIndex]) {
+                images[slideIndex].src = slide.image;
+                images[slideIndex].dataset.contentKey = 'heroSlides.' + slideIndex + '.image';
+            }
         });
 
         (window.DATA.features || []).forEach(function(feature, featureIndex) {
             images = document.querySelectorAll('.feature-slide-' + featureIndex);
             (feature.images || []).forEach(function(src, imageIndex) {
-                if (images[imageIndex]) images[imageIndex].src = src;
+                if (images[imageIndex]) {
+                    images[imageIndex].src = src;
+                    images[imageIndex].dataset.contentKey = 'features.' + featureIndex + '.images.' + imageIndex;
+                }
             });
         });
 
         images = document.querySelectorAll('#render-seasons-grid > div > img');
         (window.DATA.seasons || []).forEach(function(season, seasonIndex) {
-            if (images[seasonIndex]) images[seasonIndex].src = season.image;
+            if (images[seasonIndex]) {
+                images[seasonIndex].src = season.image;
+                images[seasonIndex].dataset.contentKey = 'seasons.' + seasonIndex + '.image';
+            }
         });
 
         images = document.querySelectorAll('#render-gallery-thumbs img');
         (window.DATA.gallery || []).forEach(function(item, galleryIndex) {
-            if (images[galleryIndex]) images[galleryIndex].src = item.image;
+            if (images[galleryIndex]) {
+                images[galleryIndex].src = item.image;
+                images[galleryIndex].dataset.contentKey = 'gallery.' + galleryIndex + '.image';
+            }
         });
         index = Number(window.currentGalleryIndex || 0);
         if (typeof window.upG === 'function') window.upG(index);
@@ -173,19 +186,29 @@
         });
     };
 
+    function renderAndInstallInspector() {
+        var renderResult = window.renderAll();
+        if (!renderResult || typeof renderResult.then !== 'function') return;
+        renderResult.then(function() {
+            if (latestPayload && typeof window.installDraftInspector === 'function') {
+                window.installDraftInspector(latestPayload);
+            }
+        });
+    }
+
     function renderWhenSafe() {
         if (isUserBusy()) {
             pendingRender = true;
             return;
         }
         pendingRender = false;
-        window.renderAll();
+        renderAndInstallInspector();
     }
 
     function retryPendingRender() {
         if (!pendingRender || isUserBusy()) return;
         pendingRender = false;
-        window.renderAll();
+        renderAndInstallInspector();
     }
 
     document.addEventListener('focusout', function() {
@@ -207,16 +230,20 @@
             return;
         }
 
+        latestPayload = payload;
+
         Object.keys(payload.values).forEach(function(key) {
             setByPath(window.DATA, key, payload.values[key]);
         });
         window.CLOUD_DATA_META = {
             updatedAt: payload.updatedAt || {},
-            generatedAt: payload.generatedAt || ''
+            generatedAt: payload.generatedAt || '',
+            editorRows: payload.editorRows || {},
+            editorSheetId: payload.editorSheetId || null
         };
         document.documentElement.dataset.cloudData = 'loaded';
         document.documentElement.dataset.contentMode = payload.mode === 'draft' ? 'draft' : 'published';
-        setPreviewStatus(payload.mode === 'draft' ? '目前顯示尚未發布的修改。' : '目前顯示正式內容。', payload.mode !== 'draft');
+        setPreviewStatus(payload.mode === 'draft' ? '目前顯示尚未發布的修改；點任何圖片可查看 Sheet 位置。' : '目前顯示正式內容。', payload.mode !== 'draft');
         renderWhenSafe();
     };
 

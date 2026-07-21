@@ -15,8 +15,8 @@
     // === 伴手禮 ===
     var prodGrid = document.getElementById('render-products-grid');
     if (prodGrid && window.DATA.products) {
-        prodGrid.innerHTML = window.DATA.products.map(function(p) {
-            return '<div class="text-center"><div class="w-full aspect-square rounded-full overflow-hidden border-8 border-[#fffcf5] shadow-lg mb-10 mx-auto max-w-[320px]"><img src="' + escapeHtml(p.image) + '" class="!w-full !h-full !object-cover !block" alt="' + escapeHtml(p.name) + '｜大花農場玫瑰伴手禮"></div><h3 class="text-3xl font-serif text-primary font-bold mb-4">' + escapeHtml(p.name) + '</h3><p class="text-gray-500 text-2xl line-clamp-2">' + escapeHtml(p.desc) + '</p></div>';
+        prodGrid.innerHTML = window.DATA.products.map(function(p, productIndex) {
+            return '<div class="text-center"><div class="w-full aspect-square rounded-full overflow-hidden border-8 border-[#fffcf5] shadow-lg mb-10 mx-auto max-w-[320px]"><img src="' + escapeHtml(p.image) + '" data-content-key="products.' + productIndex + '.image" class="!w-full !h-full !object-cover !block" alt="' + escapeHtml(p.name) + '｜大花農場玫瑰伴手禮"></div><h3 class="text-3xl font-serif text-primary font-bold mb-4">' + escapeHtml(p.name) + '</h3><p class="text-gray-500 text-2xl line-clamp-2">' + escapeHtml(p.desc) + '</p></div>';
         }).join('');
     }
 
@@ -35,6 +35,7 @@
         var phone = String((window.DATA.siteConfig && window.DATA.siteConfig.phone) || '08-810-1858');
         var phoneHref = phone.replace(/[^0-9+]/g, '');
         diyGrid.innerHTML = diyItems.map(function(d) {
+            var dataIndex = window.DATA.diy.indexOf(d);
             var modalKey = String(d.modal || '');
             var hasModal = !!(modalKey && window.DATA.modalContent
                 && Object.prototype.hasOwnProperty.call(window.DATA.modalContent, modalKey));
@@ -47,7 +48,7 @@
                 ? '<div class="text-primary font-bold text-lg border-t border-gray-100 pt-6 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">了解詳情 →</div>'
                 : '<a class="inline-block text-primary font-bold text-lg border-t border-gray-100 pt-6" href="tel:' + escapeHtml(phoneHref) + '">電話洽詢 ' + escapeHtml(phone) + '</a>';
             return '<div class="' + cardClass + '"' + modalAttr + '>'
-                + '<div class="h-96 relative overflow-hidden"><img src="' + escapeHtml(d.image) + '" class="!absolute !inset-0 !w-full !h-full !object-cover !block transition-transform duration-500 group-hover:scale-110" alt="' + escapeHtml(d.name) + '｜大花農場手作體驗">'
+                + '<div class="h-96 relative overflow-hidden"><img src="' + escapeHtml(d.image) + '" data-content-key="diy.' + dataIndex + '.image" class="!absolute !inset-0 !w-full !h-full !object-cover !block transition-transform duration-500 group-hover:scale-110" alt="' + escapeHtml(d.name) + '｜大花農場手作體驗">'
                 + '<div class="absolute top-5 left-5 flex flex-col gap-3 z-10"><span class="bg-white/90 backdrop-blur-sm text-primary px-4 py-2 rounded-lg text-sm font-bold shadow-sm border border-primary/10">⏱️ ' + escapeHtml(d.tag) + '</span><span class="bg-accent/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm">👥 ' + escapeHtml(d.group) + '</span></div></div>'
                 + '<div class="p-10 text-center"><h4 class="text-3xl font-bold text-gray-800 mb-4">' + escapeHtml(d.name) + '</h4><p class="text-primary font-serif font-bold text-3xl mb-6">' + escapeHtml(d.price) + '</p>' + action + '</div></div>';
         }).join('');

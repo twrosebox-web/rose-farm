@@ -114,9 +114,13 @@ previewWindow.roseFarmCloudCallback({
   mode: "draft",
   values: { "siteConfig.ticket.full": 300 },
   updatedAt: {},
+  editorRows: { "siteConfig.ticket.full": 8 },
+  editorSheetId: 2026072101,
 });
 assert.equal(previewWindow.DATA.siteConfig.ticket.full, 300);
 assert.equal(previewDocument.documentElement.dataset.contentMode, "draft");
 assert.match(previewStatus.textContent, /尚未發布/);
+assert.equal(previewWindow.CLOUD_DATA_META.editorRows["siteConfig.ticket.full"], 8);
+assert.equal(previewWindow.CLOUD_DATA_META.editorSheetId, 2026072101);
 
 console.log("Cloud data tests passed");
