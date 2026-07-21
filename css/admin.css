@@ -58,7 +58,12 @@ button { cursor: pointer; }
 .sidebar-brand small { margin-top: 2px; color: rgba(255,255,255,.6); font-size: 11px; }
 .sidebar-toggle { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; color: #fff; background: rgba(255,255,255,.08); font-size: 22px; line-height: 1; }
 .sidebar-toggle:hover { background: rgba(255,255,255,.15); }
-.side-nav { display: grid; gap: 5px; margin: 20px 0; overflow-y: auto; }
+.side-nav { display: grid; gap: 5px; margin: 20px 0; padding-right: 2px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.sidebar:hover .side-nav { scrollbar-color: rgba(255,255,255,.26) transparent; }
+.side-nav::-webkit-scrollbar { width: 5px; }
+.side-nav::-webkit-scrollbar-track { background: transparent; }
+.side-nav::-webkit-scrollbar-thumb { border-radius: 99px; background: transparent; }
+.sidebar:hover .side-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.26); }
 .nav-button { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 13px; color: rgba(255,255,255,.72); border: 0; border-radius: 12px; background: transparent; text-align: left; font-weight: 700; }
 .nav-button:hover, .nav-button.active { color: white; background: rgba(255,255,255,.12); }
 .nav-button .nav-count { margin-left: auto; padding: 2px 7px; border-radius: 99px; color: rgba(255,255,255,.72); background: rgba(255,255,255,.10); font-size: 11px; }

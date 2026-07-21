@@ -106,6 +106,8 @@ assert.match(css, /\.image-category-bar \{[^}]*flex-wrap: wrap/s);
 assert.match(css, /\.image-grid \{[^}]*repeat\(auto-fill, minmax\(220px, 280px\)\)/s);
 assert.match(css, /\.image-manager-card \{[^}]*max-width: 280px/s);
 assert.match(css, /body \{[^}]*overflow-x: clip/s);
+assert.match(css, /\.side-nav::\-webkit-scrollbar \{ width: 5px/);
+assert.match(css, /\.sidebar:hover \.side-nav::\-webkit-scrollbar-thumb/);
 
 const adminSource = fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
 assert.match(adminSource, /aria-current="page"/);
