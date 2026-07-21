@@ -30,6 +30,15 @@ function makeRange(row, column, rowCount = 1, columnCount = 1) {
       sheetRows[row - 3][column - 1] = value;
       return this;
     },
+    setValues(values) {
+      values.forEach((source, rowOffset) => {
+        source.forEach((value, columnOffset) => {
+          const target = sheetRows[row - 3 + rowOffset];
+          if (target) target[column - 1 + columnOffset] = value;
+        });
+      });
+      return this;
+    },
     setNumberFormat() {
       return this;
     },
@@ -37,7 +46,7 @@ function makeRange(row, column, rowCount = 1, columnCount = 1) {
 }
 
 const sheet = {
-  getLastRow: () => sheetRows.length + 3,
+  getLastRow: () => sheetRows.length + 2,
   getRange: makeRange,
 };
 
@@ -188,6 +197,7 @@ assert.equal(context.rangeContainsCell_({
 const postResult = context.doPost({
   postData: {
     contents: JSON.stringify({
+      action: "direct_update",
       passcode: "secret",
       key: "siteConfig.ticket.full",
       value: "250",
@@ -201,6 +211,7 @@ assert.equal(sheetRows[1][3], 250);
 const invalidImagePost = context.doPost({
   postData: {
     contents: JSON.stringify({
+      action: "direct_update",
       passcode: "secret",
       key: "food.0.image",
       value: "http://example.com/unsafe.jpg",
@@ -264,18 +275,51 @@ const brandDraftSave = context.doPost({
 assert.equal(JSON.parse(brandDraftSave.text).ok, false);
 assert.match(JSON.parse(brandDraftSave.text).error, /BRAND_CONFIRM_REQUIRED/);
 
+const publishDraft = context.doPost({
+  postData: {
+    contents: JSON.stringify({ action: "publish_draft", passcode: "secret" }),
+  },
+});
+const publishPayload = JSON.parse(publishDraft.text);
+assert.equal(publishPayload.ok, true);
+assert.equal(sheetRows.find((row) => row[2] === "diningContent.signatureTitle")[3], "新招牌料理");
+assert.equal(sheetRows.find((row) => row[2] === "siteConfig.announcement.text")[3], "");
+assert.equal(editorRows[2][1], "不應出現");
+
+const legacyBrandBypass = context.doPost({
+  postData: {
+    contents: JSON.stringify({
+      action: "direct_update",
+      passcode: "secret",
+      key: "diningContent.signatureTitle",
+      value: "Organic 招牌料理",
+    }),
+  },
+});
+assert.equal(JSON.parse(legacyBrandBypass.text).ok, false);
+assert.match(JSON.parse(legacyBrandBypass.text).error, /BRAND_CONFIRM_REQUIRED/);
+
 const expiredDraftResult = context.doGet({
   parameter: { callback: "roseFarmCloudCallback", mode: "draft", token: "expired-token" },
 });
 assert.match(expiredDraftResult.text, /已失效/);
 
 const previewRedirect = context.doGet({ parameter: { action: "preview" } });
-assert.match(previewRedirect.html, /preview=draft&amp;token=preview-uuid|preview=draft&token=preview-uuid/);
-assert.equal(cacheStore.get("rose-farm-draft-preview-preview-uuid"), "1");
+assert.match(previewRedirect.html, /請先登入專屬後台/);
+assert.equal(cacheStore.get("rose-farm-draft-preview-preview-uuid"), undefined);
+
+const unsupportedLegacyPost = context.doPost({
+  postData: {
+    contents: JSON.stringify({ passcode: "secret", key: "siteConfig.ticket.full", value: 999 }),
+  },
+});
+assert.equal(JSON.parse(unsupportedLegacyPost.text).ok, false);
+assert.match(JSON.parse(unsupportedLegacyPost.text).error, /不支援/);
 
 const invalidPost = context.doPost({
   postData: {
     contents: JSON.stringify({
+      action: "direct_update",
       passcode: "wrong",
       key: "siteConfig.ticket.full",
       value: 300,
@@ -287,6 +331,7 @@ assert.equal(JSON.parse(invalidPost.text).ok, false);
 const blankRequiredNumber = context.doPost({
   postData: {
     contents: JSON.stringify({
+      action: "direct_update",
       passcode: "secret",
       key: "siteConfig.ticket.full",
       value: "",
@@ -299,6 +344,7 @@ assert.equal(sheetRows[1][3], 250);
 const incompleteDiyPost = context.doPost({
   postData: {
     contents: JSON.stringify({
+      action: "direct_update",
       passcode: "secret",
       key: "diy.4.enabled",
       value: true,

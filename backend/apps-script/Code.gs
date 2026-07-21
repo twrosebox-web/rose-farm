@@ -92,10 +92,12 @@ function assertDraftPreviewToken_(token) {
 }
 
 function previewRedirectOutput_() {
-  const url = createDraftPreviewUrl_();
   return HtmlService.createHtmlOutput(
-    `<meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${url}">`
-      + `<p>正在開啟草稿預覽……若沒有自動跳轉，<a href="${url}">請點這裡</a>。</p>`,
+    '<meta charset="utf-8">'
+      + '<div style="font-family:sans-serif;padding:24px;line-height:1.7">'
+      + '<h2>無法直接開啟草稿</h2>'
+      + '<p>為保護尚未發布的內容，請先登入專屬後台，再按「草稿預覽」。</p>'
+      + '</div>',
   ).setTitle('大花農場草稿預覽');
 }
 
@@ -183,9 +185,12 @@ function doPost(e) {
         ...publishBatchEditor_(null, true, payload.brandConfirmed === true),
       });
     }
-    const updates = normalizeUpdates_(payload);
-    const result = updateRows_(updates);
-    return jsonOutput_({ ok: true, updated: result });
+    if (action === 'direct_update') {
+      const updates = normalizeUpdates_(payload);
+      const result = updateRows_(updates, payload.brandConfirmed === true);
+      return jsonOutput_({ ok: true, updated: result });
+    }
+    throw new Error('不支援的後台操作。請重新整理管理頁面後再試。');
   } catch (error) {
     return jsonOutput_({ ok: false, error: safeErrorMessage_(error) });
   }
@@ -358,9 +363,7 @@ function onOpen() {
 }
 
 function showDraftPreview() {
-  const serviceUrl = ScriptApp.getService().getUrl();
-  if (!serviceUrl) throw new Error('請先將 Apps Script 部署為網頁應用程式。');
-  const url = `${serviceUrl}?action=preview`;
+  const url = createDraftPreviewUrl_();
   const html = HtmlService.createHtmlOutput(
     `<div style="font-family:sans-serif;padding:20px;line-height:1.7">`
       + `<p>預覽連結每次開啟後 10 分鐘內有效，不會發布內容。</p>`
@@ -457,13 +460,11 @@ function refreshEditorUi(spreadsheetOverride) {
 }
 
 function updateDraftPreviewLinks_(spreadsheet) {
-  const serviceUrl = ScriptApp.getService().getUrl();
-  if (!serviceUrl) return;
-  const formula = `=HYPERLINK("${serviceUrl}?action=preview","👁 預覽尚未發布的修改")`;
+  const message = '🔒 請由「🌹 內容後台」選單或專屬後台開啟草稿預覽';
   const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
-  if (editor) editor.getRange('A6').setFormula(formula);
+  if (editor) editor.getRange('A6').setValue(message);
   const control = spreadsheet.getSheetByName('控制台');
-  if (control) control.getRange('A20').setFormula(formula);
+  if (control) control.getRange('A20').setValue(message);
 }
 
 function publishBatchEditor_(spreadsheetOverride, throwOnError, brandConfirmed) {
@@ -509,7 +510,8 @@ function publishBatchEditor_(spreadsheetOverride, throwOnError, brandConfirmed) 
     editorRows.forEach((editorRow) => {
       const rawValue = editorRow[EDITOR.columns.value - EDITOR.columns.value];
       const key = String(editorRow[EDITOR.columns.key - EDITOR.columns.value] || '').trim();
-      if (!key) return;
+      const editorActive = editorRow[EDITOR.columns.active - EDITOR.columns.value] === true;
+      if (!key || !editorActive) return;
       const contentRow = contentByKey.get(key);
       if (!contentRow) throw new Error(`內容資料找不到 key：${key}`);
       const type = String(contentRow[BACKEND.columns.type - 1] || 'string');
@@ -716,7 +718,7 @@ function buildPublicPayload_() {
   };
 }
 
-function updateRows_(updates) {
+function updateRows_(updates, brandConfirmed) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
 
@@ -755,6 +757,9 @@ function updateRows_(updates) {
       const value = coerceValue_(update.value, type);
       if (required && isEmptyValue_(value)) {
         throw new Error(`必填欄位不可留空：${key}`);
+      }
+      if (/有機|organic/i.test(String(value || '')) && !brandConfirmed) {
+        throw new Error(`BRAND_CONFIRM_REQUIRED：內容包含「有機／Organic」，請確認已由 Shao 核決：${key}`);
       }
       return { key, value, sheetRow: found.sheetRow };
     });
