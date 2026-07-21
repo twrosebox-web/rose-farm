@@ -111,7 +111,11 @@ assert.equal(
 );
 assert.equal(
   context.makeEditorLabel_({ item: "入園與票務／第 2 題", key: "qa.categories.0.list.1.rows.0.value" }),
-  "入園與票務／第 2 題｜💬 答案內容・第 1 列・內容",
+  "💬 答案 2｜選項 1・內容",
+);
+assert.equal(
+  context.makeEditorLabel_({ item: "入園與票務／第 2 題", key: "qa.categories.0.list.1.q" }),
+  "❓ 題目內容 2｜入園與票務",
 );
 assert.equal(context.rangeContainsCell_({
   getRow: () => 5,

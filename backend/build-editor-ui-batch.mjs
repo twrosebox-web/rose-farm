@@ -108,16 +108,22 @@ function makeLabel(item, key) {
     };
     return names[diyMatch[2]];
   }
-  const rowsMatch = key.match(/\.rows\.(\d+)\.(label|value|note)$/);
-  if (rowsMatch) {
-    const names = { label: '左欄', value: '內容', note: '補充' };
-    return `${item}｜💬 答案內容・第 ${Number(rowsMatch[1]) + 1} 列・${names[rowsMatch[2]]}`;
+  const faqRowsMatch = key.match(/^qa\.categories\.\d+\.list\.(\d+)\.rows\.(\d+)\.(label|value|note)$/);
+  if (faqRowsMatch) {
+    const names = { label: '項目', value: '內容', note: '補充' };
+    return `💬 答案 ${Number(faqRowsMatch[1]) + 1}｜選項 ${Number(faqRowsMatch[2]) + 1}・${names[faqRowsMatch[3]]}`;
   }
   const factsMatch = key.match(/\.facts\.(\d+)$/);
   if (factsMatch) return `${item}｜重點 ${Number(factsMatch[1]) + 1}`;
+  const faqMatch = key.match(/^qa\.categories\.\d+\.list\.(\d+)\.(q|a)$/);
+  if (faqMatch) {
+    const category = item.split('／第')[0];
+    const questionNumber = Number(faqMatch[1]) + 1;
+    return faqMatch[2] === 'q'
+      ? `❓ 題目內容 ${questionNumber}｜${category}`
+      : `💬 答案內容 ${questionNumber}`;
+  }
   const field = key.split('.').pop();
-  if (field === 'q') return `${item}｜❓ 問題`;
-  if (field === 'a') return `${item}｜💬 答案`;
   return `${item}｜${fieldNames[field] || field}`;
 }
 
@@ -178,7 +184,11 @@ function pushEntry(entry) {
 sections.forEach((entries, section) => {
   const sheetRow = outputRows.length + 1;
   sectionRows.push(sheetRow);
-  outputRows.push([cellData(section)]);
+  outputRows.push([cellData(
+    section === 'FAQ'
+      ? 'FAQ 常見問題｜請直接修改右欄的題目與答案內容'
+      : section,
+  )]);
   if (section !== 'DIY') {
     entries.forEach(pushEntry);
     return;
@@ -379,6 +389,18 @@ const requests = [
     },
     'backgroundColorStyle,textFormat,borders',
   )),
+  ...questionRows.map((row) => format(
+    editorRange(row - 1, row, 1, 2),
+    {
+      textFormat: {
+        fontFamily: 'Noto Sans TC',
+        fontSize: 14,
+        bold: true,
+        foregroundColorStyle: { rgbColor: rgb('#183d21') },
+      },
+    },
+    'textFormat',
+  )),
   ...answerRows.map((row) => format(
     editorRange(row - 1, row, 0, 2),
     {
@@ -505,14 +527,14 @@ const requests = [
   ...questionRows.map((row) => ({
     updateDimensionProperties: {
       range: { sheetId: editorId, dimension: 'ROWS', startIndex: row - 1, endIndex: row },
-      properties: { pixelSize: 46 },
+      properties: { pixelSize: 58 },
       fields: 'pixelSize',
     },
   })),
   ...answerRows.map((row) => ({
     updateDimensionProperties: {
       range: { sheetId: editorId, dimension: 'ROWS', startIndex: row - 1, endIndex: row },
-      properties: { pixelSize: 76 },
+      properties: { pixelSize: 54 },
       fields: 'pixelSize',
     },
   })),

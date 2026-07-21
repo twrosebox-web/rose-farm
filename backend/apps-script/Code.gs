@@ -355,13 +355,22 @@ function makeEditorLabel_(entry) {
     };
     return names[diyMatch[2]];
   }
-  const rowsMatch = key.match(/\.rows\.(\d+)\.(label|value|note)$/);
-  if (rowsMatch) {
-    const names = { label: '標籤', value: '內容', note: '補充' };
-    return `${entry.item}｜💬 答案內容・第 ${Number(rowsMatch[1]) + 1} 列・${names[rowsMatch[2]]}`;
+  const faqRowsMatch = key.match(/^qa\.categories\.\d+\.list\.(\d+)\.rows\.(\d+)\.(label|value|note)$/);
+  if (faqRowsMatch) {
+    const names = { label: '項目', value: '內容', note: '補充' };
+    return `💬 答案 ${Number(faqRowsMatch[1]) + 1}｜選項 ${Number(faqRowsMatch[2]) + 1}・${names[faqRowsMatch[3]]}`;
   }
   const factsMatch = key.match(/\.facts\.(\d+)$/);
   if (factsMatch) return `${entry.item}｜重點 ${Number(factsMatch[1]) + 1}`;
+
+  const faqMatch = key.match(/^qa\.categories\.\d+\.list\.(\d+)\.(q|a)$/);
+  if (faqMatch) {
+    const category = entry.item.split('／第')[0];
+    const questionNumber = Number(faqMatch[1]) + 1;
+    return faqMatch[2] === 'q'
+      ? `❓ 題目內容 ${questionNumber}｜${category}`
+      : `💬 答案內容 ${questionNumber}`;
+  }
 
   const field = key.split('.').pop();
   const names = {
