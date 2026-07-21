@@ -16,6 +16,23 @@ const rgb = (hex) => {
   };
 };
 
+const controlButtonFormat = (backgroundHex) => ({
+  backgroundColorStyle: { rgbColor: rgb(backgroundHex) },
+  horizontalAlignment: 'CENTER',
+  verticalAlignment: 'MIDDLE',
+  wrapStrategy: 'WRAP',
+  textFormat: {
+    fontFamily: 'Noto Sans TC',
+    fontSize: 14,
+    bold: true,
+    foregroundColorStyle: { rgbColor: rgb('#ffffff') },
+  },
+  borders: Object.fromEntries(['top', 'bottom', 'left', 'right'].map((edge) => [edge, {
+    style: 'SOLID_MEDIUM',
+    colorStyle: { rgbColor: rgb('#ffffff') },
+  }])),
+});
+
 const editorRange = (startRowIndex, endRowIndex, startColumnIndex, endColumnIndex) => ({
   sheetId: editorId,
   startRowIndex,
@@ -131,7 +148,6 @@ const outputRows = [
   [],
 ];
 const sectionRows = [];
-const sectionRowByName = new Map();
 const fieldRows = [];
 const numberRows = [];
 const booleanRows = [];
@@ -162,7 +178,6 @@ function pushEntry(entry) {
 sections.forEach((entries, section) => {
   const sheetRow = outputRows.length + 1;
   sectionRows.push(sheetRow);
-  sectionRowByName.set(section, sheetRow);
   outputRows.push([cellData(section)]);
   if (section !== 'DIY') {
     entries.forEach(pushEntry);
@@ -196,8 +211,8 @@ sections.forEach((entries, section) => {
 });
 
 outputRows[5] = [
-  formulaCell(`=HYPERLINK("#gid=${editorId}&range=A${sectionRowByName.get('DIY')}:B${sectionRowByName.get('DIY')}","↓ 跳到 DIY 項目")`),
-  formulaCell(`=HYPERLINK("#gid=${editorId}&range=A${sectionRowByName.get('FAQ')}:B${sectionRowByName.get('FAQ')}","↓ 跳到 FAQ 問題")`),
+  formulaCell(`=HYPERLINK("#gid=${editorId}&range=A"&(MATCH("DIY",A7:A,0)+7),"↓ 跳到 DIY 第一項")`),
+  formulaCell(`=HYPERLINK("#gid=${editorId}&range=B"&(MATCH("FAQ",A7:A,0)+7),"↓ 跳到 FAQ 第一題")`),
 ];
 
 const totalRows = outputRows.length;
@@ -223,6 +238,13 @@ const requests = [
   {
     unmergeCells: {
       range: editorRange(0, gridRows, 0, 8),
+    },
+  },
+  {
+    updateDimensionProperties: {
+      range: { sheetId: editorId, dimension: 'ROWS', startIndex: 0, endIndex: gridRows },
+      properties: { hiddenByUser: false },
+      fields: 'hiddenByUser',
     },
   },
   { deleteConditionalFormatRule: { sheetId: editorId, index: 0 } },
@@ -527,15 +549,43 @@ const requests = [
   },
   {
     updateCells: {
-      range: { sheetId: controlId, startRowIndex: 17, endRowIndex: 18, startColumnIndex: 0, endColumnIndex: 1 },
-      rows: [{ values: [{
-        userEnteredValue: {
-          formulaValue: `=HYPERLINK("#gid=${editorId}&range=A1:B${totalRows}","▶ 開啟批次內容編輯")`,
-        },
-      }] }],
+      range: { sheetId: controlId, startRowIndex: 9, endRowIndex: 10, startColumnIndex: 0, endColumnIndex: 1 },
+      rows: [{ values: [{ userEnteredValue: { stringValue: `${contentRows.length} 個可管理欄位` } }] }],
       fields: 'userEnteredValue',
     },
   },
+  { unmergeCells: { range: { sheetId: controlId, startRowIndex: 17, endRowIndex: 19, startColumnIndex: 0, endColumnIndex: 6 } } },
+  ...[[0, 2], [2, 4], [4, 6]].map(([startColumnIndex, endColumnIndex]) => ({
+    mergeCells: {
+      range: { sheetId: controlId, startRowIndex: 17, endRowIndex: 19, startColumnIndex, endColumnIndex },
+      mergeType: 'MERGE_ALL',
+    },
+  })),
+  {
+    updateCells: {
+      range: { sheetId: controlId, startRowIndex: 17, endRowIndex: 19, startColumnIndex: 0, endColumnIndex: 6 },
+      rows: [
+        { values: [
+          { userEnteredValue: { formulaValue: `=HYPERLINK("#gid=${editorId}&range=A1:B8","① 全部內容")` } }, {},
+          { userEnteredValue: { formulaValue: `=HYPERLINK("#gid=${editorId}&range=A"&(MATCH("DIY",'批次編輯'!A:A,0)+1),"② DIY 項目")` } }, {},
+          { userEnteredValue: { formulaValue: `=HYPERLINK("#gid=${editorId}&range=B"&(MATCH("FAQ",'批次編輯'!A:A,0)+1),"③ FAQ 第一題")` } }, {},
+        ] },
+        { values: [{}, {}, {}, {}, {}, {}] },
+      ],
+      fields: 'userEnteredValue',
+    },
+  },
+  ...[
+    [0, 2, '#7d5a50'],
+    [2, 4, '#c6903f'],
+    [4, 6, '#3a5a40'],
+  ].map(([startColumnIndex, endColumnIndex, backgroundHex]) => ({
+    repeatCell: {
+      range: { sheetId: controlId, startRowIndex: 17, endRowIndex: 19, startColumnIndex, endColumnIndex },
+      cell: { userEnteredFormat: controlButtonFormat(backgroundHex) },
+      fields: 'userEnteredFormat',
+    },
+  })),
 ];
 
 if (totalRows < 100 || contentRows.length < 100) {
