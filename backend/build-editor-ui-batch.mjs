@@ -350,6 +350,20 @@ const requests = [
   },
   {
     updateCells: {
+      range: { sheetId: controlId, startRowIndex: 2, endRowIndex: 3, startColumnIndex: 0, endColumnIndex: 1 },
+      rows: [{ values: [{ userEnteredValue: { stringValue: '平常從「後台編輯」選擇分類與項目，一次修改一個欄位' } }] }],
+      fields: 'userEnteredValue',
+    },
+  },
+  {
+    updateCells: {
+      range: { sheetId: controlId, startRowIndex: 9, endRowIndex: 10, startColumnIndex: 4, endColumnIndex: 5 },
+      rows: [{ values: [{ userEnteredValue: { stringValue: '待安裝\nApps Script' } }] }],
+      fields: 'userEnteredValue',
+    },
+  },
+  {
+    updateCells: {
       range: { sheetId: controlId, startRowIndex: 4, endRowIndex: 5, startColumnIndex: 0, endColumnIndex: 6 },
       rows: [{ values: [
         { userEnteredValue: { stringValue: '① 開啟後台編輯\n點下方「後台編輯」分頁' } }, {},

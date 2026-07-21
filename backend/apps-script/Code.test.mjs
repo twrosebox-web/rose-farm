@@ -92,6 +92,12 @@ assert.equal(
   context.makeEditorLabel_({ item: "玫瑰花醬DIY", key: "diy.0.price" }),
   "玫瑰花醬DIY｜價格",
 );
+assert.equal(context.rangeContainsCell_({
+  getRow: () => 5,
+  getLastRow: () => 5,
+  getColumn: () => 2,
+  getLastColumn: () => 4,
+}, 5, 2), true);
 
 const postResult = context.doPost({
   postData: {

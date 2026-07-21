@@ -1,4 +1,4 @@
-/* global CacheService, ContentService, LockService, PropertiesService, SpreadsheetApp */
+/* global CacheService, ContentService, LockService, PropertiesService, ScriptApp, SpreadsheetApp */
 
 const BACKEND = Object.freeze({
   sheetName: '內容資料',
@@ -87,8 +87,18 @@ function setupBackend() {
     throw new Error('請從「大花農場內容後台」試算表開啟 Apps Script 後再執行。');
   }
   PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', spreadsheet.getId());
-  refreshEditorUi();
+  installEditorTrigger_(spreadsheet);
+  refreshEditorUi(spreadsheet);
+  updateControlStatus_(spreadsheet, '已初始化\n待部署網站連線');
   return { ok: true, spreadsheetId: spreadsheet.getId() };
+}
+
+function installEditorTrigger_(spreadsheet) {
+  const handler = 'handleEditorEdit';
+  ScriptApp.getProjectTriggers()
+    .filter((trigger) => trigger.getHandlerFunction() === handler)
+    .forEach((trigger) => ScriptApp.deleteTrigger(trigger));
+  ScriptApp.newTrigger(handler).forSpreadsheet(spreadsheet).onEdit().create();
 }
 
 /**
@@ -112,41 +122,52 @@ function openEditorSheet() {
 /**
  * Sheet 編輯事件：處理單筆 UI 發布，也維護內容資料的 updatedAt 與快取。
  */
-function onEdit(e) {
+function handleEditorEdit(e) {
   if (!e || !e.range) return;
   const sheet = e.range.getSheet();
+  const spreadsheet = e.source || sheet.getParent();
   const sheetName = sheet.getName();
 
   if (
     sheetName === BACKEND.sheetName
-    && e.range.getColumn() === BACKEND.columns.value
-    && e.range.getRow() >= BACKEND.dataStartRow
+    && e.range.getColumn() <= BACKEND.columns.value
+    && e.range.getLastColumn() >= BACKEND.columns.value
+    && e.range.getLastRow() >= BACKEND.dataStartRow
   ) {
-    sheet.getRange(e.range.getRow(), BACKEND.columns.updatedAt)
-      .setValue(new Date().toISOString())
+    const firstRow = Math.max(e.range.getRow(), BACKEND.dataStartRow);
+    const rowCount = e.range.getLastRow() - firstRow + 1;
+    const timestamp = new Date().toISOString();
+    sheet.getRange(firstRow, BACKEND.columns.updatedAt, rowCount, 1)
+      .setValues(Array.from({ length: rowCount }, () => [timestamp]))
       .setNumberFormat('@');
     CacheService.getScriptCache().remove(BACKEND.cacheKey);
     return;
   }
 
   if (sheetName !== EDITOR.sheetName) return;
-  const a1 = e.range.getA1Notation();
-  if (a1 === EDITOR.categoryCell) {
-    refreshEditorItems_();
-  } else if (a1 === EDITOR.itemCell) {
-    loadEditorSelection_();
-  } else if (a1 === EDITOR.newValueCell) {
+  if (rangeContainsCell_(e.range, 5, 2)) {
+    refreshEditorItems_(spreadsheet);
+  } else if (rangeContainsCell_(e.range, 7, 2)) {
+    loadEditorSelection_(spreadsheet);
+  } else if (rangeContainsCell_(e.range, 13, 2)) {
     sheet.getRange(EDITOR.statusCell).setValue('尚未發布');
-  } else if (a1 === EDITOR.publishCell && e.value === 'TRUE') {
-    publishEditorValue_();
+  } else if (rangeContainsCell_(e.range, 23, 4) && e.value === 'TRUE') {
+    publishEditorValue_(spreadsheet);
   }
 }
 
-function refreshEditorUi() {
-  const spreadsheet = getBackendSpreadsheet_();
+function rangeContainsCell_(range, row, column) {
+  return range.getRow() <= row
+    && range.getLastRow() >= row
+    && range.getColumn() <= column
+    && range.getLastColumn() >= column;
+}
+
+function refreshEditorUi(spreadsheetOverride) {
+  const spreadsheet = spreadsheetOverride || getBackendSpreadsheet_();
   const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
   if (!editor) throw new Error(`找不到「${EDITOR.sheetName}」分頁。`);
-  const rows = getContentRows_();
+  const rows = getContentRows_(spreadsheet);
   const categories = [...new Set(rows.map((entry) => entry.section).filter(Boolean))];
   if (!categories.length) throw new Error('內容資料沒有可編輯的分類。');
 
@@ -160,14 +181,14 @@ function refreshEditorUi() {
   if (!categories.includes(String(categoryRange.getValue() || ''))) {
     categoryRange.setValue(categories[0]);
   }
-  refreshEditorItems_();
+  refreshEditorItems_(spreadsheet);
 }
 
-function refreshEditorItems_() {
-  const spreadsheet = getBackendSpreadsheet_();
+function refreshEditorItems_(spreadsheetOverride) {
+  const spreadsheet = spreadsheetOverride || getBackendSpreadsheet_();
   const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
   const category = String(editor.getRange(EDITOR.categoryCell).getValue() || '');
-  const items = getContentRows_().filter((entry) => entry.section === category);
+  const items = getContentRows_(spreadsheet).filter((entry) => entry.section === category);
   if (!items.length) {
     editor.getRange(EDITOR.itemCell).clearContent().clearDataValidations();
     clearEditorFields_(editor, '此分類目前沒有資料');
@@ -185,15 +206,15 @@ function refreshEditorItems_() {
   if (!labels.includes(String(itemRange.getValue() || ''))) {
     itemRange.setValue(labels[0]);
   }
-  loadEditorSelection_();
+  loadEditorSelection_(spreadsheet);
 }
 
-function loadEditorSelection_() {
-  const spreadsheet = getBackendSpreadsheet_();
+function loadEditorSelection_(spreadsheetOverride) {
+  const spreadsheet = spreadsheetOverride || getBackendSpreadsheet_();
   const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
   const category = String(editor.getRange(EDITOR.categoryCell).getValue() || '');
   const label = String(editor.getRange(EDITOR.itemCell).getValue() || '');
-  const entry = getContentRows_().find(
+  const entry = getContentRows_(spreadsheet).find(
     (candidate) => candidate.section === category && candidate.editorLabel === label,
   );
   if (!entry) {
@@ -212,12 +233,18 @@ function loadEditorSelection_() {
   editor.getRange(EDITOR.rowCell).setValue(entry.sheetRow);
 }
 
-function publishEditorValue_() {
-  const spreadsheet = getBackendSpreadsheet_();
-  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
-  const publishRange = editor.getRange(EDITOR.publishCell);
-
+function publishEditorValue_(spreadsheetOverride) {
+  let editor = null;
+  let publishRange = null;
+  const lock = LockService.getScriptLock();
+  let locked = false;
   try {
+    lock.waitLock(10000);
+    locked = true;
+    const spreadsheet = spreadsheetOverride || getBackendSpreadsheet_();
+    editor = spreadsheet.getSheetByName(EDITOR.sheetName);
+    if (!editor) throw new Error(`找不到「${EDITOR.sheetName}」分頁。`);
+    publishRange = editor.getRange(EDITOR.publishCell);
     if (editor.getRange(EDITOR.confirmCell).getValue() !== true) {
       throw new Error('請先勾選「我已確認內容」。');
     }
@@ -228,12 +255,15 @@ function publishEditorValue_() {
       throw new Error('編輯項目資料不完整，請重新整理編輯面板。');
     }
 
-    const contentSheet = getContentSheet_();
+    const contentSheet = getContentSheet_(spreadsheet);
     const row = contentSheet
       .getRange(sheetRow, 1, 1, BACKEND.columns.active)
       .getValues()[0];
     if (String(row[BACKEND.columns.key - 1] || '').trim() !== key) {
       throw new Error('資料列已變動，請重新選擇編輯項目。');
+    }
+    if (row[BACKEND.columns.active - 1] !== true) {
+      throw new Error('此項目已停用，無法發布。');
     }
 
     const rawValue = editor.getRange(EDITOR.newValueCell).getValue();
@@ -256,24 +286,25 @@ function publishEditorValue_() {
     editor.getRange(EDITOR.currentCell).setValue(value);
     editor.getRange(EDITOR.newValueCell).setValue(value);
     editor.getRange(EDITOR.updatedAtCell).setValue(timestamp);
-    editor.getRange(EDITOR.statusCell).setValue('已更新 ✓');
+    editor.getRange(EDITOR.statusCell).setValue('已儲存到 Sheet ✓');
     editor.getRange(EDITOR.confirmCell).setValue(false);
   } catch (error) {
-    editor.getRange(EDITOR.statusCell).setValue(safeErrorMessage_(error));
+    if (editor) editor.getRange(EDITOR.statusCell).setValue(safeErrorMessage_(error));
   } finally {
-    publishRange.setValue(false);
+    if (publishRange) publishRange.setValue(false);
+    if (locked) lock.releaseLock();
   }
 }
 
 function getBackendSpreadsheet_() {
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) return active;
   const spreadsheetId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
-  return spreadsheetId
-    ? SpreadsheetApp.openById(spreadsheetId)
-    : SpreadsheetApp.getActiveSpreadsheet();
+  return spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : null;
 }
 
-function getContentRows_() {
-  const sheet = getContentSheet_();
+function getContentRows_(spreadsheetOverride) {
+  const sheet = getContentSheet_(spreadsheetOverride);
   const lastRow = sheet.getLastRow();
   if (lastRow < BACKEND.dataStartRow) return [];
   return sheet
@@ -291,9 +322,10 @@ function getContentRows_() {
       value: row[BACKEND.columns.value - 1],
       guidance: String(row[BACKEND.columns.guidance - 1] || ''),
       updatedAt: normalizeTimestamp_(row[BACKEND.columns.updatedAt - 1]),
+      active: row[BACKEND.columns.active - 1] === true,
       sheetRow: BACKEND.dataStartRow + index,
     }))
-    .filter((entry) => entry.key)
+    .filter((entry) => entry.key && entry.active)
     .map((entry) => ({ ...entry, editorLabel: makeEditorLabel_(entry) }));
 }
 
@@ -325,6 +357,13 @@ function clearEditorFields_(editor, status) {
   editor.getRange(EDITOR.statusCell).setValue(status);
   editor.getRange(EDITOR.confirmCell).setValue(false);
   editor.getRange(EDITOR.publishCell).setValue(false);
+}
+
+function updateControlStatus_(spreadsheet, status) {
+  const control = spreadsheet.getSheetByName('控制台');
+  if (!control) return;
+  control.getRange('A3').setValue('平常從「後台編輯」選擇分類與項目，一次修改一個欄位');
+  control.getRange('E10').setValue(status);
 }
 
 function buildPublicPayload_() {
@@ -417,12 +456,12 @@ function updateRows_(updates) {
   }
 }
 
-function getContentSheet_() {
+function getContentSheet_(spreadsheetOverride) {
   const properties = PropertiesService.getScriptProperties();
   const spreadsheetId = properties.getProperty('SPREADSHEET_ID');
-  const spreadsheet = spreadsheetId
-    ? SpreadsheetApp.openById(spreadsheetId)
-    : SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = spreadsheetOverride
+    || SpreadsheetApp.getActiveSpreadsheet()
+    || (spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : null);
   if (!spreadsheet) throw new Error('找不到後台試算表，請先執行 setupBackend。');
   const sheet = spreadsheet.getSheetByName(BACKEND.sheetName);
   if (!sheet) throw new Error(`找不到「${BACKEND.sheetName}」分頁。`);
