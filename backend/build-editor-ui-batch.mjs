@@ -1,6 +1,9 @@
+import { rows as contentRows } from './build-sheet-template.mjs';
+
 const controlId = 15049093;
 const contentId = 895957080;
 const editorId = 2026072101;
+const firstDataRow = 7;
 
 const rgb = (hex) => {
   const value = hex.replace('#', '');
@@ -11,7 +14,7 @@ const rgb = (hex) => {
   };
 };
 
-const gridRange = (startRowIndex, endRowIndex, startColumnIndex, endColumnIndex) => ({
+const editorRange = (startRowIndex, endRowIndex, startColumnIndex, endColumnIndex) => ({
   sheetId: editorId,
   startRowIndex,
   endRowIndex,
@@ -19,12 +22,14 @@ const gridRange = (startRowIndex, endRowIndex, startColumnIndex, endColumnIndex)
   endColumnIndex,
 });
 
-const merge = (startRowIndex, endRowIndex, startColumnIndex, endColumnIndex) => ({
-  mergeCells: {
-    range: gridRange(startRowIndex, endRowIndex, startColumnIndex, endColumnIndex),
-    mergeType: 'MERGE_ALL',
-  },
-});
+const cellData = (value, note) => {
+  const cell = {};
+  if (typeof value === 'boolean') cell.userEnteredValue = { boolValue: value };
+  else if (typeof value === 'number') cell.userEnteredValue = { numberValue: value };
+  else if (value !== undefined && value !== null) cell.userEnteredValue = { stringValue: String(value) };
+  if (note) cell.note = note;
+  return cell;
+};
 
 const format = (range, userEnteredFormat, fields) => ({
   repeatCell: {
@@ -34,73 +39,144 @@ const format = (range, userEnteredFormat, fields) => ({
   },
 });
 
-const values = Array.from({ length: 24 }, () =>
-  Array.from({ length: 8 }, () => ({ userEnteredValue: { stringValue: '' } })),
-);
-const setText = (row, column, value) => {
-  values[row - 1][column - 1] = { userEnteredValue: { stringValue: value } };
-};
-const setBoolean = (row, column, value) => {
-  values[row - 1][column - 1] = { userEnteredValue: { boolValue: value } };
+const merge = (startRowIndex, endRowIndex, startColumnIndex, endColumnIndex) => ({
+  mergeCells: {
+    range: editorRange(startRowIndex, endRowIndex, startColumnIndex, endColumnIndex),
+    mergeType: 'MERGE_ALL',
+  },
+});
+
+const fieldNames = {
+  homeUrl: '官網網址',
+  phone: '聯絡電話',
+  shopPhone: '展售室手機',
+  enabled: '是否顯示',
+  text: '內容',
+  full: '全票',
+  fullDiscount: '全票折抵',
+  half: '半票',
+  halfDiscount: '半票折抵',
+  freeRule: '免票規則',
+  time: '營業時間',
+  note: '補充說明',
+  price: '價格',
+  subPrice: '補充價格',
+  name: '名稱',
+  tag: '時長',
+  group: '成團人數',
+  image: '圖片網址',
+  title: '標題',
+  q: '問題',
+  a: '答案',
 };
 
-setText(1, 1, '🌹 大花農場｜內容編輯面板');
-setText(3, 1, '一次只修改一個項目，系統欄位已藏在底層');
-setText(4, 1, '⚠️ 下一步：安裝 Apps Script 後，分類切換與發布才會啟用。');
-setText(5, 1, '① 選擇分類');
-setText(5, 2, '基本資訊');
-setText(7, 1, '② 選擇項目');
-setText(7, 2, '官網｜官網網址');
-setText(9, 1, '目前內容');
-setText(9, 2, 'https://www.rosebox.com.tw');
-setText(13, 1, '③ 輸入新內容');
-setText(13, 2, 'https://www.rosebox.com.tw');
-setText(18, 1, '填寫說明');
-setText(18, 2, '回官網按鈕連結；請填完整 https:// 網址。');
-setText(21, 1, '最後更新');
-setText(21, 2, '2026-07-17T06:13:34.458Z');
-setText(21, 4, '尚未修改');
-setText(23, 1, '我已確認內容');
-setBoolean(23, 2, false);
-setText(23, 3, '發布更新');
-setBoolean(23, 4, false);
-setText(2, 8, 'homeUrl');
-values[2][7] = { userEnteredValue: { numberValue: 4 } };
+function makeLabel(item, key) {
+  const rowsMatch = key.match(/\.rows\.(\d+)\.(label|value|note)$/);
+  if (rowsMatch) {
+    const names = { label: '左欄', value: '內容', note: '補充' };
+    return `${item}｜表格第 ${Number(rowsMatch[1]) + 1} 列・${names[rowsMatch[2]]}`;
+  }
+  const factsMatch = key.match(/\.facts\.(\d+)$/);
+  if (factsMatch) return `${item}｜重點 ${Number(factsMatch[1]) + 1}`;
+  const field = key.split('.').pop();
+  return `${item}｜${fieldNames[field] || field}`;
+}
+
+const sections = new Map();
+contentRows.forEach((row, index) => {
+  const [section, item, key, value, type, required, guidance, , active] = row;
+  if (!sections.has(section)) sections.set(section, []);
+  sections.get(section).push({
+    section,
+    label: makeLabel(item, key),
+    key,
+    value,
+    type,
+    required,
+    guidance,
+    active,
+    sourceRow: index + 4,
+  });
+});
+
+const outputRows = [
+  [cellData('🌹 大花農場｜批次內容編輯')],
+  [],
+  [cellData('目前狀態'), cellData('待安裝 Apps Script')],
+  [cellData('重新載入全部內容'), cellData(false, '會放棄尚未儲存的修改，重新載入底層內容。')],
+  [cellData('我已確認，儲存全部變更'), cellData(false, '改完多個黃色欄位後，只要勾選這裡一次。')],
+  [],
+];
+const sectionRows = [];
+const fieldRows = [];
+const numberRows = [];
+const booleanRows = [];
+
+sections.forEach((entries, section) => {
+  const sheetRow = outputRows.length + 1;
+  sectionRows.push(sheetRow);
+  outputRows.push([cellData(section)]);
+  entries.forEach((entry) => {
+    const rowNumber = outputRows.length + 1;
+    fieldRows.push(rowNumber);
+    if (entry.type === 'number') numberRows.push(rowNumber);
+    if (entry.type === 'boolean') booleanRows.push(rowNumber);
+    outputRows.push([
+      cellData(entry.label),
+      cellData(entry.value, entry.guidance),
+      cellData(entry.key),
+      cellData(entry.sourceRow),
+      cellData(entry.type),
+      cellData(entry.required),
+      cellData(entry.active),
+    ]);
+  });
+});
+
+const totalRows = outputRows.length;
+const gridRows = Math.max(220, totalRows + 10);
+const dataRange = editorRange(firstDataRow - 1, totalRows, 0, 7);
+const valueRange = editorRange(firstDataRow - 1, totalRows, 1, 2);
 
 const requests = [
   {
-    addSheet: {
+    updateSheetProperties: {
       properties: {
         sheetId: editorId,
-        title: '後台編輯',
-        index: 1,
+        title: '批次編輯',
         gridProperties: {
-          rowCount: 40,
+          rowCount: gridRows,
           columnCount: 8,
-          frozenRowCount: 3,
+          frozenRowCount: 5,
           hideGridlines: true,
         },
       },
+      fields: 'title,gridProperties(rowCount,columnCount,frozenRowCount,hideGridlines)',
     },
   },
-  merge(0, 2, 0, 4),
-  merge(2, 3, 0, 4),
-  merge(3, 4, 0, 4),
-  merge(4, 5, 1, 4),
-  merge(6, 7, 1, 4),
-  merge(8, 11, 1, 4),
-  merge(12, 16, 1, 4),
-  merge(17, 19, 1, 4),
-  merge(20, 21, 1, 3),
+  {
+    unmergeCells: {
+      range: editorRange(0, 40, 0, 8),
+    },
+  },
+  {
+    repeatCell: {
+      range: editorRange(0, gridRows, 0, 8),
+      cell: {},
+      fields: 'userEnteredValue,note,dataValidation,userEnteredFormat',
+    },
+  },
+  merge(0, 2, 0, 2),
+  ...sectionRows.map((row) => merge(row - 1, row, 0, 2)),
   {
     updateCells: {
-      range: gridRange(0, 24, 0, 8),
-      rows: values.map((row) => ({ values: row })),
-      fields: 'userEnteredValue',
+      range: editorRange(0, totalRows, 0, 7),
+      rows: outputRows.map((row) => ({ values: row })),
+      fields: 'userEnteredValue,note',
     },
   },
   format(
-    gridRange(0, 24, 0, 8),
+    editorRange(0, totalRows, 0, 7),
     {
       backgroundColorStyle: { rgbColor: rgb('#fffdf8') },
       verticalAlignment: 'MIDDLE',
@@ -114,7 +190,7 @@ const requests = [
     'backgroundColorStyle,verticalAlignment,wrapStrategy,textFormat',
   ),
   format(
-    gridRange(0, 2, 0, 4),
+    editorRange(0, 2, 0, 2),
     {
       backgroundColorStyle: { rgbColor: rgb('#3a5a40') },
       horizontalAlignment: 'CENTER',
@@ -128,134 +204,49 @@ const requests = [
     'backgroundColorStyle,horizontalAlignment,textFormat',
   ),
   format(
-    gridRange(2, 3, 0, 4),
+    editorRange(2, 3, 0, 2),
     {
       backgroundColorStyle: { rgbColor: rgb('#eaf1e8') },
-      horizontalAlignment: 'CENTER',
-      textFormat: {
-        fontFamily: 'Noto Sans TC',
-        fontSize: 11,
-        bold: true,
-        foregroundColorStyle: { rgbColor: rgb('#3a5a40') },
-      },
-    },
-    'backgroundColorStyle,horizontalAlignment,textFormat',
-  ),
-  format(
-    gridRange(3, 4, 0, 4),
-    {
-      backgroundColorStyle: { rgbColor: rgb('#fff0ee') },
-      horizontalAlignment: 'CENTER',
-      textFormat: {
-        fontFamily: 'Noto Sans TC',
-        fontSize: 10,
-        bold: true,
-        foregroundColorStyle: { rgbColor: rgb('#a24b47') },
-      },
-    },
-    'backgroundColorStyle,horizontalAlignment,textFormat',
-  ),
-  format(
-    gridRange(4, 23, 0, 1),
-    {
-      backgroundColorStyle: { rgbColor: rgb('#f3e6df') },
-      horizontalAlignment: 'CENTER',
-      textFormat: {
-        fontFamily: 'Noto Sans TC',
-        fontSize: 11,
-        bold: true,
-        foregroundColorStyle: { rgbColor: rgb('#7d4544') },
-      },
-    },
-    'backgroundColorStyle,horizontalAlignment,textFormat',
-  ),
-  format(
-    gridRange(4, 7, 1, 4),
-    {
-      backgroundColorStyle: { rgbColor: rgb('#ffffff') },
-      textFormat: {
-        fontFamily: 'Noto Sans TC',
-        fontSize: 12,
-        bold: true,
-        foregroundColorStyle: { rgbColor: rgb('#3a5a40') },
-      },
-      borders: {
-        bottom: { style: 'SOLID_MEDIUM', colorStyle: { rgbColor: rgb('#8ba888') } },
-      },
+      textFormat: { bold: true, foregroundColorStyle: { rgbColor: rgb('#3a5a40') } },
+      borders: { bottom: { style: 'SOLID', colorStyle: { rgbColor: rgb('#b8c8b5') } } },
     },
     'backgroundColorStyle,textFormat,borders',
   ),
   format(
-    gridRange(8, 11, 1, 4),
+    editorRange(3, 5, 0, 2),
     {
-      backgroundColorStyle: { rgbColor: rgb('#f1f4f0') },
-      verticalAlignment: 'TOP',
-      textFormat: {
-        fontFamily: 'Noto Sans TC',
-        fontSize: 12,
-        foregroundColorStyle: { rgbColor: rgb('#4f5b51') },
-      },
-      borders: {
-        top: { style: 'SOLID', colorStyle: { rgbColor: rgb('#d6ded4') } },
-        bottom: { style: 'SOLID', colorStyle: { rgbColor: rgb('#d6ded4') } },
-        left: { style: 'SOLID', colorStyle: { rgbColor: rgb('#d6ded4') } },
-        right: { style: 'SOLID', colorStyle: { rgbColor: rgb('#d6ded4') } },
-      },
+      backgroundColorStyle: { rgbColor: rgb('#f3e6df') },
+      textFormat: { bold: true, foregroundColorStyle: { rgbColor: rgb('#7d4544') } },
+      borders: { bottom: { style: 'SOLID', colorStyle: { rgbColor: rgb('#dbc8bd') } } },
     },
-    'backgroundColorStyle,verticalAlignment,textFormat,borders',
+    'backgroundColorStyle,textFormat,borders',
   ),
   format(
-    gridRange(12, 16, 1, 4),
+    editorRange(firstDataRow - 1, totalRows, 0, 1),
+    {
+      backgroundColorStyle: { rgbColor: rgb('#f6f0e8') },
+      textFormat: { bold: true, foregroundColorStyle: { rgbColor: rgb('#5f493e') } },
+      borders: { bottom: { style: 'SOLID', colorStyle: { rgbColor: rgb('#e4ddd4') } } },
+    },
+    'backgroundColorStyle,textFormat,borders',
+  ),
+  format(
+    editorRange(firstDataRow - 1, totalRows, 1, 2),
     {
       backgroundColorStyle: { rgbColor: rgb('#fff1b8') },
       verticalAlignment: 'TOP',
-      textFormat: {
-        fontFamily: 'Noto Sans TC',
-        fontSize: 13,
-        bold: true,
-        foregroundColorStyle: { rgbColor: rgb('#3a5a40') },
-      },
+      textFormat: { bold: true, foregroundColorStyle: { rgbColor: rgb('#29452e') } },
       borders: {
-        top: { style: 'SOLID_MEDIUM', colorStyle: { rgbColor: rgb('#d6a93b') } },
-        bottom: { style: 'SOLID_MEDIUM', colorStyle: { rgbColor: rgb('#d6a93b') } },
+        bottom: { style: 'SOLID', colorStyle: { rgbColor: rgb('#dcc775') } },
         left: { style: 'SOLID_MEDIUM', colorStyle: { rgbColor: rgb('#d6a93b') } },
-        right: { style: 'SOLID_MEDIUM', colorStyle: { rgbColor: rgb('#d6a93b') } },
       },
     },
     'backgroundColorStyle,verticalAlignment,textFormat,borders',
   ),
-  format(
-    gridRange(17, 19, 1, 4),
-    {
-      backgroundColorStyle: { rgbColor: rgb('#f8f5f2') },
-      verticalAlignment: 'TOP',
-      textFormat: {
-        fontFamily: 'Noto Sans TC',
-        fontSize: 10,
-        foregroundColorStyle: { rgbColor: rgb('#6e716d') },
-      },
-    },
-    'backgroundColorStyle,verticalAlignment,textFormat',
-  ),
-  format(
-    gridRange(20, 21, 1, 4),
-    {
-      backgroundColorStyle: { rgbColor: rgb('#eef3ec') },
-      horizontalAlignment: 'CENTER',
-      textFormat: {
-        fontFamily: 'Noto Sans TC',
-        fontSize: 10,
-        bold: true,
-        foregroundColorStyle: { rgbColor: rgb('#3a5a40') },
-      },
-    },
-    'backgroundColorStyle,horizontalAlignment,textFormat',
-  ),
-  format(
-    gridRange(22, 23, 0, 4),
+  ...sectionRows.map((row) => format(
+    editorRange(row - 1, row, 0, 2),
     {
       backgroundColorStyle: { rgbColor: rgb('#3a5a40') },
-      horizontalAlignment: 'CENTER',
       textFormat: {
         fontFamily: 'Noto Sans TC',
         fontSize: 12,
@@ -263,55 +254,75 @@ const requests = [
         foregroundColorStyle: { rgbColor: rgb('#ffffff') },
       },
     },
-    'backgroundColorStyle,horizontalAlignment,textFormat',
-  ),
+    'backgroundColorStyle,textFormat',
+  )),
   {
     setDataValidation: {
-      range: gridRange(4, 5, 1, 2),
-      rule: {
-        condition: {
-          type: 'ONE_OF_LIST',
-          values: ['基本資訊', '公告', '票價', '體驗服務', '餐廳', 'DIY', '參觀資訊', 'FAQ 分類', 'FAQ', 'FAQ 表格']
-            .map((userEnteredValue) => ({ userEnteredValue })),
-        },
-        strict: true,
-        showCustomUi: true,
-      },
+      range: editorRange(3, 5, 1, 2),
+      rule: { condition: { type: 'BOOLEAN' }, strict: true, showCustomUi: true },
     },
   },
-  {
+  ...booleanRows.map((row) => ({
     setDataValidation: {
-      range: gridRange(6, 7, 1, 2),
+      range: editorRange(row - 1, row, 1, 2),
+      rule: { condition: { type: 'BOOLEAN' }, strict: true, showCustomUi: true },
+    },
+  })),
+  ...numberRows.map((row) => ({
+    setDataValidation: {
+      range: editorRange(row - 1, row, 1, 2),
       rule: {
         condition: {
-          type: 'ONE_OF_LIST',
-          values: ['官網｜官網網址', '聯絡電話｜聯絡電話', '展售室手機｜展售室手機', '營業時間｜營業時間', '公休日｜補充說明']
-            .map((userEnteredValue) => ({ userEnteredValue })),
+          type: 'CUSTOM_FORMULA',
+          values: [{ userEnteredValue: `=OR(B${row}="",ISNUMBER(B${row}))` }],
         },
+        inputMessage: '此欄只填數字。',
         strict: true,
-        showCustomUi: true,
-      },
-    },
-  },
-  ...[1, 3].map((columnIndex) => ({
-    setDataValidation: {
-      range: gridRange(22, 23, columnIndex, columnIndex + 1),
-      rule: {
-        condition: { type: 'BOOLEAN' },
-        strict: true,
-        showCustomUi: true,
+        showCustomUi: false,
       },
     },
   })),
   {
-    updateCells: {
-      range: gridRange(12, 13, 1, 2),
-      rows: [{ values: [{ note: '只修改黃色區域。完成後勾選確認，再勾選發布更新。' }] }],
-      fields: 'note',
+    addConditionalFormatRule: {
+      rule: {
+        ranges: [valueRange],
+        booleanRule: {
+          condition: {
+            type: 'CUSTOM_FORMULA',
+            values: [{ userEnteredValue: `=AND($F${firstDataRow}="是",$C${firstDataRow}<>"",$B${firstDataRow}="")` }],
+          },
+          format: {
+            backgroundColorStyle: { rgbColor: rgb('#ffd7d4') },
+            textFormat: { foregroundColorStyle: { rgbColor: rgb('#9b2c2c') }, bold: true },
+          },
+        },
+      },
+      index: 0,
+    },
+  },
+  {
+    addConditionalFormatRule: {
+      rule: {
+        ranges: [valueRange],
+        booleanRule: {
+          condition: {
+            type: 'CUSTOM_FORMULA',
+            values: [{ userEnteredValue: `=OR(IFERROR(SEARCH("有機",$B${firstDataRow})>0,FALSE),IFERROR(SEARCH("Organic",$B${firstDataRow})>0,FALSE))` }],
+          },
+          format: {
+            backgroundColorStyle: { rgbColor: rgb('#ffe0b2') },
+            textFormat: { foregroundColorStyle: { rgbColor: rgb('#a23b00') }, bold: true },
+          },
+        },
+      },
+      index: 0,
     },
   },
   ...[
-    [0, 1, 138], [1, 4, 118], [4, 8, 5],
+    [0, 1, 300],
+    [1, 2, 520],
+    [2, 7, 90],
+    [7, 8, 12],
   ].map(([startIndex, endIndex, pixelSize]) => ({
     updateDimensionProperties: {
       range: { sheetId: editorId, dimension: 'COLUMNS', startIndex, endIndex },
@@ -321,13 +332,15 @@ const requests = [
   })),
   {
     updateDimensionProperties: {
-      range: { sheetId: editorId, dimension: 'COLUMNS', startIndex: 4, endIndex: 8 },
+      range: { sheetId: editorId, dimension: 'COLUMNS', startIndex: 2, endIndex: 8 },
       properties: { hiddenByUser: true },
       fields: 'hiddenByUser',
     },
   },
   ...[
-    [0, 3, 34], [4, 8, 38], [8, 11, 30], [12, 16, 32], [17, 19, 28], [20, 24, 36],
+    [0, 2, 38],
+    [2, 5, 36],
+    [5, 6, 14],
   ].map(([startIndex, endIndex, pixelSize]) => ({
     updateDimensionProperties: {
       range: { sheetId: editorId, dimension: 'ROWS', startIndex, endIndex },
@@ -335,11 +348,18 @@ const requests = [
       fields: 'pixelSize',
     },
   })),
+  ...sectionRows.map((row) => ({
+    updateDimensionProperties: {
+      range: { sheetId: editorId, dimension: 'ROWS', startIndex: row - 1, endIndex: row },
+      properties: { pixelSize: 34 },
+      fields: 'pixelSize',
+    },
+  })),
   {
     updateDimensionProperties: {
-      range: { sheetId: editorId, dimension: 'ROWS', startIndex: 24, endIndex: 40 },
-      properties: { hiddenByUser: true },
-      fields: 'hiddenByUser',
+      range: { sheetId: editorId, dimension: 'ROWS', startIndex: firstDataRow - 1, endIndex: totalRows },
+      properties: { pixelSize: 48 },
+      fields: 'pixelSize',
     },
   },
   {
@@ -351,7 +371,18 @@ const requests = [
   {
     updateCells: {
       range: { sheetId: controlId, startRowIndex: 2, endRowIndex: 3, startColumnIndex: 0, endColumnIndex: 1 },
-      rows: [{ values: [{ userEnteredValue: { stringValue: '平常從「後台編輯」選擇分類與項目，一次修改一個欄位' } }] }],
+      rows: [{ values: [{ userEnteredValue: { stringValue: '平常在「批次編輯」一次修改多個欄位，再統一儲存' } }] }],
+      fields: 'userEnteredValue',
+    },
+  },
+  {
+    updateCells: {
+      range: { sheetId: controlId, startRowIndex: 4, endRowIndex: 5, startColumnIndex: 0, endColumnIndex: 6 },
+      rows: [{ values: [
+        { userEnteredValue: { stringValue: '① 開啟批次編輯\n所有欄位都在同一頁' } }, {},
+        { userEnteredValue: { stringValue: '② 一次修改多項\n只改黃色欄位' } }, {},
+        { userEnteredValue: { stringValue: '③ 儲存全部變更\n勾選一次即可送出' } }, {},
+      ] }],
       fields: 'userEnteredValue',
     },
   },
@@ -364,21 +395,10 @@ const requests = [
   },
   {
     updateCells: {
-      range: { sheetId: controlId, startRowIndex: 4, endRowIndex: 5, startColumnIndex: 0, endColumnIndex: 6 },
-      rows: [{ values: [
-        { userEnteredValue: { stringValue: '① 開啟後台編輯\n點下方「後台編輯」分頁' } }, {},
-        { userEnteredValue: { stringValue: '② 選擇分類與項目\n一次只處理一個欄位' } }, {},
-        { userEnteredValue: { stringValue: '③ 確認後發布\n資料表會自動同步' } }, {},
-      ] }],
-      fields: 'userEnteredValue',
-    },
-  },
-  {
-    updateCells: {
       range: { sheetId: controlId, startRowIndex: 17, endRowIndex: 18, startColumnIndex: 0, endColumnIndex: 1 },
       rows: [{ values: [{
         userEnteredValue: {
-          formulaValue: '=HYPERLINK("#gid=2026072101&range=A1:D24","▶ 開啟內容編輯面板")',
+          formulaValue: `=HYPERLINK("#gid=${editorId}&range=A1:B${totalRows}","▶ 開啟批次內容編輯")`,
         },
       }] }],
       fields: 'userEnteredValue',
@@ -386,5 +406,19 @@ const requests = [
   },
 ];
 
-if (requests.length < 20) throw new Error('Editor UI batch preflight failed.');
-console.log(JSON.stringify(requests));
+if (totalRows < 100 || contentRows.length < 100) {
+  throw new Error('Batch editor row generation is unexpectedly short.');
+}
+
+const badRequests = requests.filter((request) => Object.keys(request).length !== 1);
+if (badRequests.length) throw new Error('Batch request preflight failed.');
+
+console.log(JSON.stringify({
+  requests,
+  summary: {
+    contentRows: contentRows.length,
+    sections: sections.size,
+    totalRows,
+    firstDataRow,
+  },
+}));

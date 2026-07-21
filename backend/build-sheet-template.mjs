@@ -107,6 +107,10 @@ data.qa.categories.forEach((category, categoryIndex) => {
   });
 });
 
+const isMain = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMain) {
 const workbook = Workbook.create();
 const guideSheet = workbook.worksheets.add("操作說明");
 const contentSheet = workbook.worksheets.add("內容資料");
@@ -231,3 +235,6 @@ const output = await SpreadsheetFile.exportXlsx(workbook);
 const outputPath = path.join(outputDir, "大花農場內容後台範本.xlsx");
 await output.save(outputPath);
 console.log(JSON.stringify({ outputPath, rowCount: rows.length, sheetNames: ["操作說明", "內容資料"] }));
+}
+
+export { rows };

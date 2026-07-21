@@ -20,18 +20,20 @@ const BACKEND = Object.freeze({
 });
 
 const EDITOR = Object.freeze({
-  sheetName: '後台編輯',
-  categoryCell: 'B5',
-  itemCell: 'B7',
-  currentCell: 'B9',
-  newValueCell: 'B13',
-  guidanceCell: 'B18',
-  updatedAtCell: 'B21',
-  statusCell: 'D21',
-  confirmCell: 'B23',
-  publishCell: 'D23',
-  keyCell: 'H2',
-  rowCell: 'H3',
+  sheetName: '批次編輯',
+  statusCell: 'B3',
+  refreshCell: 'B4',
+  publishCell: 'B5',
+  dataStartRow: 7,
+  columns: Object.freeze({
+    label: 1,
+    value: 2,
+    key: 3,
+    sourceRow: 4,
+    type: 5,
+    required: 6,
+    active: 7,
+  }),
 });
 
 /**
@@ -107,8 +109,8 @@ function installEditorTrigger_(spreadsheet) {
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('🌹 內容後台')
-    .addItem('重新整理編輯面板', 'refreshEditorUi')
-    .addItem('開啟編輯面板', 'openEditorSheet')
+    .addItem('重新載入全部內容', 'refreshEditorUi')
+    .addItem('開啟批次編輯', 'openEditorSheet')
     .addToUi();
 }
 
@@ -120,7 +122,7 @@ function openEditorSheet() {
 }
 
 /**
- * Sheet 編輯事件：處理單筆 UI 發布，也維護內容資料的 updatedAt 與快取。
+ * Sheet 編輯事件：批次頁只在按下「重新載入」或「儲存全部」時執行重工作業。
  */
 function handleEditorEdit(e) {
   if (!e || !e.range) return;
@@ -145,14 +147,20 @@ function handleEditorEdit(e) {
   }
 
   if (sheetName !== EDITOR.sheetName) return;
-  if (rangeContainsCell_(e.range, 5, 2)) {
-    refreshEditorItems_(spreadsheet);
-  } else if (rangeContainsCell_(e.range, 7, 2)) {
-    loadEditorSelection_(spreadsheet);
-  } else if (rangeContainsCell_(e.range, 13, 2)) {
-    sheet.getRange(EDITOR.statusCell).setValue('尚未發布');
-  } else if (rangeContainsCell_(e.range, 23, 4) && e.value === 'TRUE') {
-    publishEditorValue_(spreadsheet);
+  if (rangeContainsCell_(e.range, 4, EDITOR.columns.value) && e.value === 'TRUE') {
+    refreshEditorUi(spreadsheet);
+    return;
+  }
+  if (rangeContainsCell_(e.range, 5, EDITOR.columns.value) && e.value === 'TRUE') {
+    publishBatchEditor_(spreadsheet);
+    return;
+  }
+  if (
+    e.range.getColumn() <= EDITOR.columns.value
+    && e.range.getLastColumn() >= EDITOR.columns.value
+    && e.range.getLastRow() >= EDITOR.dataStartRow
+  ) {
+    sheet.getRange(EDITOR.statusCell).setValue('有未儲存的變更');
   }
 }
 
@@ -167,73 +175,31 @@ function refreshEditorUi(spreadsheetOverride) {
   const spreadsheet = spreadsheetOverride || getBackendSpreadsheet_();
   const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
   if (!editor) throw new Error(`找不到「${EDITOR.sheetName}」分頁。`);
-  const rows = getContentRows_(spreadsheet);
-  const categories = [...new Set(rows.map((entry) => entry.section).filter(Boolean))];
-  if (!categories.length) throw new Error('內容資料沒有可編輯的分類。');
 
-  const categoryRange = editor.getRange(EDITOR.categoryCell);
-  categoryRange.setDataValidation(
-    SpreadsheetApp.newDataValidation()
-      .requireValueInList(categories, true)
-      .setAllowInvalid(false)
-      .build(),
-  );
-  if (!categories.includes(String(categoryRange.getValue() || ''))) {
-    categoryRange.setValue(categories[0]);
-  }
-  refreshEditorItems_(spreadsheet);
-}
+  const entries = getContentRows_(spreadsheet);
+  const entryByKey = new Map(entries.map((entry) => [entry.key, entry]));
+  const lastRow = editor.getLastRow();
+  const rowCount = Math.max(0, lastRow - EDITOR.dataStartRow + 1);
+  if (!rowCount) throw new Error('批次編輯頁沒有欄位對照資料。');
 
-function refreshEditorItems_(spreadsheetOverride) {
-  const spreadsheet = spreadsheetOverride || getBackendSpreadsheet_();
-  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
-  const category = String(editor.getRange(EDITOR.categoryCell).getValue() || '');
-  const items = getContentRows_(spreadsheet).filter((entry) => entry.section === category);
-  if (!items.length) {
-    editor.getRange(EDITOR.itemCell).clearContent().clearDataValidations();
-    clearEditorFields_(editor, '此分類目前沒有資料');
-    return;
-  }
+  const keyValues = editor
+    .getRange(EDITOR.dataStartRow, EDITOR.columns.key, rowCount, 1)
+    .getValues();
+  const editorValues = editor
+    .getRange(EDITOR.dataStartRow, EDITOR.columns.value, rowCount, 1)
+    .getValues();
 
-  const labels = items.map((entry) => entry.editorLabel);
-  const itemRange = editor.getRange(EDITOR.itemCell);
-  itemRange.setDataValidation(
-    SpreadsheetApp.newDataValidation()
-      .requireValueInList(labels, true)
-      .setAllowInvalid(false)
-      .build(),
-  );
-  if (!labels.includes(String(itemRange.getValue() || ''))) {
-    itemRange.setValue(labels[0]);
-  }
-  loadEditorSelection_(spreadsheet);
-}
-
-function loadEditorSelection_(spreadsheetOverride) {
-  const spreadsheet = spreadsheetOverride || getBackendSpreadsheet_();
-  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
-  const category = String(editor.getRange(EDITOR.categoryCell).getValue() || '');
-  const label = String(editor.getRange(EDITOR.itemCell).getValue() || '');
-  const entry = getContentRows_(spreadsheet).find(
-    (candidate) => candidate.section === category && candidate.editorLabel === label,
-  );
-  if (!entry) {
-    clearEditorFields_(editor, '找不到所選項目');
-    return;
-  }
-
-  editor.getRange(EDITOR.currentCell).setValue(entry.value);
-  editor.getRange(EDITOR.newValueCell).setValue(entry.value);
-  editor.getRange(EDITOR.guidanceCell).setValue(entry.guidance || '請依網站實際內容填寫。');
-  editor.getRange(EDITOR.updatedAtCell).setValue(entry.updatedAt || '尚無紀錄');
-  editor.getRange(EDITOR.statusCell).setValue('尚未修改');
-  editor.getRange(EDITOR.confirmCell).setValue(false);
+  keyValues.forEach((row, index) => {
+    const key = String(row[0] || '').trim();
+    if (key && entryByKey.has(key)) editorValues[index][0] = entryByKey.get(key).value;
+  });
+  editor.getRange(EDITOR.dataStartRow, EDITOR.columns.value, rowCount, 1).setValues(editorValues);
+  editor.getRange(EDITOR.refreshCell).setValue(false);
   editor.getRange(EDITOR.publishCell).setValue(false);
-  editor.getRange(EDITOR.keyCell).setValue(entry.key);
-  editor.getRange(EDITOR.rowCell).setValue(entry.sheetRow);
+  editor.getRange(EDITOR.statusCell).setValue(`已載入 ${entries.length} 個欄位`);
 }
 
-function publishEditorValue_(spreadsheetOverride) {
+function publishBatchEditor_(spreadsheetOverride) {
   let editor = null;
   let publishRange = null;
   const lock = LockService.getScriptLock();
@@ -245,55 +211,80 @@ function publishEditorValue_(spreadsheetOverride) {
     editor = spreadsheet.getSheetByName(EDITOR.sheetName);
     if (!editor) throw new Error(`找不到「${EDITOR.sheetName}」分頁。`);
     publishRange = editor.getRange(EDITOR.publishCell);
-    if (editor.getRange(EDITOR.confirmCell).getValue() !== true) {
-      throw new Error('請先勾選「我已確認內容」。');
-    }
-
-    const key = String(editor.getRange(EDITOR.keyCell).getValue() || '').trim();
-    const sheetRow = Number(editor.getRange(EDITOR.rowCell).getValue());
-    if (!isValidKey_(key) || !Number.isInteger(sheetRow)) {
-      throw new Error('編輯項目資料不完整，請重新整理編輯面板。');
-    }
 
     const contentSheet = getContentSheet_(spreadsheet);
-    const row = contentSheet
-      .getRange(sheetRow, 1, 1, BACKEND.columns.active)
-      .getValues()[0];
-    if (String(row[BACKEND.columns.key - 1] || '').trim() !== key) {
-      throw new Error('資料列已變動，請重新選擇編輯項目。');
-    }
-    if (row[BACKEND.columns.active - 1] !== true) {
-      throw new Error('此項目已停用，無法發布。');
-    }
+    const contentLastRow = contentSheet.getLastRow();
+    const contentRowCount = contentLastRow - BACKEND.dataStartRow + 1;
+    if (contentRowCount < 1) throw new Error('內容資料沒有可更新的欄位。');
+    const contentRows = contentSheet
+      .getRange(BACKEND.dataStartRow, 1, contentRowCount, BACKEND.columns.active)
+      .getValues();
 
-    const rawValue = editor.getRange(EDITOR.newValueCell).getValue();
-    const required = String(row[BACKEND.columns.required - 1] || '') === '是';
-    if (required && isRawEmptyValue_(rawValue)) {
-      throw new Error('必填內容不可留空。');
-    }
-    if (/有機|organic/i.test(String(rawValue || ''))) {
-      throw new Error('內容包含「有機／Organic」，請先交由 Shao 核決。');
-    }
-
-    const type = String(row[BACKEND.columns.type - 1] || 'string');
-    const value = coerceValue_(rawValue, type);
+    const editorRowCount = editor.getLastRow() - EDITOR.dataStartRow + 1;
+    const editorRows = editor
+      .getRange(
+        EDITOR.dataStartRow,
+        EDITOR.columns.value,
+        editorRowCount,
+        EDITOR.columns.active - EDITOR.columns.value + 1,
+      )
+      .getValues();
     const timestamp = new Date().toISOString();
-    contentSheet.getRange(sheetRow, BACKEND.columns.value).setValue(value);
-    contentSheet.getRange(sheetRow, BACKEND.columns.updatedAt).setValue(timestamp).setNumberFormat('@');
-    SpreadsheetApp.flush();
-    CacheService.getScriptCache().remove(BACKEND.cacheKey);
+    let changedCount = 0;
 
-    editor.getRange(EDITOR.currentCell).setValue(value);
-    editor.getRange(EDITOR.newValueCell).setValue(value);
-    editor.getRange(EDITOR.updatedAtCell).setValue(timestamp);
-    editor.getRange(EDITOR.statusCell).setValue('已儲存到 Sheet ✓');
-    editor.getRange(EDITOR.confirmCell).setValue(false);
+    editorRows.forEach((editorRow) => {
+      const rawValue = editorRow[EDITOR.columns.value - EDITOR.columns.value];
+      const key = String(editorRow[EDITOR.columns.key - EDITOR.columns.value] || '').trim();
+      const sourceRow = Number(editorRow[EDITOR.columns.sourceRow - EDITOR.columns.value]);
+      const type = String(editorRow[EDITOR.columns.type - EDITOR.columns.value] || 'string');
+      const required = String(editorRow[EDITOR.columns.required - EDITOR.columns.value] || '') === '是';
+      const active = editorRow[EDITOR.columns.active - EDITOR.columns.value] === true;
+      if (!key) return;
+      if (!active) throw new Error(`此項目已停用：${key}`);
+      if (!Number.isInteger(sourceRow) || sourceRow < BACKEND.dataStartRow) {
+        throw new Error(`來源資料列不合法：${key}`);
+      }
+
+      const contentIndex = sourceRow - BACKEND.dataStartRow;
+      const contentRow = contentRows[contentIndex];
+      if (!contentRow || String(contentRow[BACKEND.columns.key - 1] || '').trim() !== key) {
+        throw new Error(`資料列已變動：${key}`);
+      }
+      if (required && isRawEmptyValue_(rawValue)) {
+        throw new Error(`必填內容不可留空：${key}`);
+      }
+      const value = coerceValue_(rawValue, type);
+      const currentValue = contentRow[BACKEND.columns.value - 1];
+      if (valuesEqual_(value, currentValue)) return;
+      if (/有機|organic/i.test(String(value || ''))) {
+        throw new Error(`內容包含「有機／Organic」，請先交由 Shao 核決：${key}`);
+      }
+      contentRow[BACKEND.columns.value - 1] = value;
+      contentRow[BACKEND.columns.updatedAt - 1] = timestamp;
+      changedCount += 1;
+    });
+
+    if (changedCount) {
+      contentSheet.getRange(BACKEND.dataStartRow, BACKEND.columns.value, contentRowCount, 1)
+        .setValues(contentRows.map((row) => [row[BACKEND.columns.value - 1]]));
+      contentSheet.getRange(BACKEND.dataStartRow, BACKEND.columns.updatedAt, contentRowCount, 1)
+        .setValues(contentRows.map((row) => [row[BACKEND.columns.updatedAt - 1]]))
+        .setNumberFormat('@');
+      SpreadsheetApp.flush();
+      CacheService.getScriptCache().remove(BACKEND.cacheKey);
+    }
+    editor.getRange(EDITOR.statusCell)
+      .setValue(changedCount ? `已儲存 ${changedCount} 項到 Sheet ✓` : '沒有需要儲存的變更');
   } catch (error) {
     if (editor) editor.getRange(EDITOR.statusCell).setValue(safeErrorMessage_(error));
   } finally {
     if (publishRange) publishRange.setValue(false);
     if (locked) lock.releaseLock();
   }
+}
+
+function valuesEqual_(left, right) {
+  return typeof left === typeof right && left === right;
 }
 
 function getBackendSpreadsheet_() {
@@ -351,18 +342,10 @@ function makeEditorLabel_(entry) {
   return `${entry.item}｜${names[field] || field}`;
 }
 
-function clearEditorFields_(editor, status) {
-  [EDITOR.currentCell, EDITOR.newValueCell, EDITOR.guidanceCell, EDITOR.updatedAtCell,
-    EDITOR.keyCell, EDITOR.rowCell].forEach((cell) => editor.getRange(cell).clearContent());
-  editor.getRange(EDITOR.statusCell).setValue(status);
-  editor.getRange(EDITOR.confirmCell).setValue(false);
-  editor.getRange(EDITOR.publishCell).setValue(false);
-}
-
 function updateControlStatus_(spreadsheet, status) {
   const control = spreadsheet.getSheetByName('控制台');
   if (!control) return;
-  control.getRange('A3').setValue('平常從「後台編輯」選擇分類與項目，一次修改一個欄位');
+  control.getRange('A3').setValue('平常在「批次編輯」一次修改多個欄位，再統一儲存');
   control.getRange('E10').setValue(status);
 }
 
