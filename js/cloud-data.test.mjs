@@ -3,6 +3,7 @@ import fs from "node:fs";
 import vm from "node:vm";
 
 const listeners = {};
+const pageNode = { dataset: { pageKey: "story.title" }, textContent: "" };
 const document = {
   activeElement: null,
   body: {},
@@ -13,11 +14,12 @@ const document = {
     return { remove() {}, set src(value) { this._src = value; }, get src() { return this._src; } };
   },
   getElementById() { return null; },
+  querySelectorAll(selector) { return selector === "[data-page-key]" ? [pageNode] : []; },
 };
 
 const windowObject = {
   CLOUD_CONFIG: { endpoint: "" },
-  DATA: { siteConfig: { ticket: { full: 200 } } },
+  DATA: { siteConfig: { ticket: { full: 200 } }, pageContent: { story: { title: "品牌故事" } } },
   getSelection: () => ({ toString: () => "使用者正在反白" }),
   setTimeout: () => 1,
   clearTimeout() {},
@@ -37,6 +39,10 @@ vm.runInContext(fs.readFileSync(new URL("./cloud-data.js", import.meta.url), "ut
 assert.equal(document.documentElement.dataset.cloudData, "disabled");
 assert.equal(typeof windowObject.renderAll, "function");
 assert.equal(typeof windowObject.roseFarmCloudCallback, "function");
+assert.equal(typeof windowObject.renderStaticContent, "function");
+windowObject.renderStaticContent();
+assert.equal(pageNode.textContent, "品牌故事");
+assert.equal(pageNode.dataset.contentKey, "pageContent.story.title");
 
 windowObject.roseFarmCloudCallback({
   ok: true,
@@ -46,6 +52,8 @@ windowObject.roseFarmCloudCallback({
     "diy.4.name": "新增 DIY",
     "food.0.image": "https://example.com/food.jpg",
     "diningContent.signatureTitle": "雲端招牌料理",
+    "pageContent.story.title": "雲端品牌故事",
+    "modalContent.modal-tour.title": "雲端導覽標題",
     "__proto__.polluted": true,
   },
   updatedAt: { "siteConfig.ticket.full": "2026-07-17T00:00:00.000Z" },
@@ -56,6 +64,8 @@ assert.equal(windowObject.DATA.diy[4].enabled, false);
 assert.equal(windowObject.DATA.diy[4].name, "新增 DIY");
 assert.equal(windowObject.DATA.food[0].image, "https://example.com/food.jpg");
 assert.equal(windowObject.DATA.diningContent.signatureTitle, "雲端招牌料理");
+assert.equal(windowObject.DATA.pageContent.story.title, "雲端品牌故事");
+assert.equal(windowObject.DATA.modalContent["modal-tour"].title, "雲端導覽標題");
 assert.equal({}.polluted, undefined);
 assert.equal(document.documentElement.dataset.cloudData, "loaded");
 

@@ -14,6 +14,12 @@ window.DATA = {
     siteConfig: {
         phone: "08-810-1858",
         shopPhone: "0987-019-118",
+        address: "屏東縣九如鄉九如路一段2-88號",
+        mapUrl: "https://www.google.com/maps/search/?api=1&query=大花農場",
+        facebookUrl: "https://www.facebook.com/ROSEBOXGOOD/",
+        mapImage: "https://res.cloudinary.com/daypc93hn/image/upload/v1760079811/park-map-original_in4u4q.jpg",
+        halfTicketRule: "學生／65 歲以上／身心障礙（含陪同 1 人）",
+        announcement: { enabled: false, text: "" },
         ticket: { full: 200, fullDiscount: 150, half: 100, halfDiscount: 50, freeRule: "身高 120cm 以下孩童" },
         diningImages: [
             "https://i.meee.com.tw/bbEKYrF.webp",   // 餐廳介紹大圓圖
@@ -21,6 +27,91 @@ window.DATA = {
             "https://i.meee.com.tw/Es9hQP8.webp",   // 餐廳介紹左上浮動圖
             "https://i.meee.com.tw/krq8ccF.webp"    // 招牌白玉鍋圖
         ]
+    },
+
+    // ========== 頁面固定文案（原本寫在 index.html 的可見文字）==========
+    pageContent: {
+        hero: {
+            badge: "Natural Farming Rose Garden",
+            title: "屏東九如大花玫瑰休閒農場",
+            subtitle: "親子農場・景觀餐廳・生態導覽",
+            tagline1: "自然農法・玫瑰五感療癒體驗",
+            tagline2: "產地餐桌・手作工坊・生態導覽"
+        },
+        story: {
+            title: "與土地的溫柔對話",
+            paragraph1: "不必跋涉深山，在屏東九如的平原上，我們用 17 年養出了一座以自然農法照顧的玫瑰園。",
+            paragraph2: "這條路不容易，但為了讓懂生活的您，能擁有一處真正安心的秘境，我們拒絕了所有化學捷徑。",
+            paragraph3: "這不只是一趟旅程，更是一次對生活品質的投票。",
+            paragraph4: "邀請您放慢腳步，品味這份得來不易的真實。"
+        },
+        overview: {
+            title1: "花一開，",
+            title2: "就是出發的理由。",
+            description: "一站滿足「吃、玩、學、住」，讓這趟旅行成為您最珍藏的記憶。"
+        },
+        gallery: { english: "Farm Gallery", title: "捕捉農場光影" },
+        seasons: {
+            title: "四季花園・生態時序",
+            subtitle: "春賞花、夏採果、秋養息、冬嚐鮮",
+            calendarEnglish: "Bloom Calendar",
+            calendarTitle: "年度花曆",
+            calendarHint: "點擊查看 12 個月生態時序"
+        },
+        ecology: { english: "Ecology & Life", title: "遇見農場的小鄰居" },
+        services: {
+            english: "Events & Venues",
+            title: "多元服務・空間租借",
+            lead: "婚禮證婚 ‧ 企業場租 ‧ 生態導覽 ‧ 星空露營",
+            description: "在這片寬廣的平原，為您的重要時刻打造專屬舞台。"
+        },
+        dining: {
+            english: "Rose Garden Dining",
+            subtitle: "在屏東的艷陽下，來一場「可以吃的玫瑰花」饗宴。",
+            cuisineEnglish: "The Art of Rose Cuisine",
+            cuisineTitle1: "將清晨的露水與花香，",
+            cuisineTitle2: "化作舌尖上的詩篇。",
+            cuisineParagraph1: "大花農場不只是玫瑰的故鄉，更是創意料理的實驗室。我們堅持採摘當日清晨香氣濃郁的「自然農法栽培食用玫瑰」入菜。",
+            cuisineParagraph2: "玫瑰的清甜與微苦，在主廚手中與屏東在地食材交織。",
+            cuisineEmphasis: "原來，花的滋味可以如此富有層次。",
+            signatureLabel: "SIGNATURE DISH",
+            signatureChoice: "Must-Try Choice",
+            optionsTitle: "Dining Options",
+            moreEnglish: "More Delicacies",
+            moreTitle: "✨ 更多玫瑰創意料理"
+        },
+        products: { title: "來自風土的獻禮", subtitle: "把屏東的陽光與芬芳帶回家" },
+        diy: { title: "體驗・手作 DIY" },
+        visitor: {
+            english: "Visitor Information",
+            title: "參觀資訊",
+            mapButton: "Google Map 導航",
+            intro1: "適合親子一起走進花園，從玫瑰採摘、手作體驗到生態導覽，依照自己的步調探索農場。",
+            intro2: "安排屏東一日遊時，這裡也適合作為其中一站，留一段時間賞花、用餐，再從九如慢慢出發。",
+            driveTitle: "開車前往",
+            driveDescription: "國道三號九如交流道下，車程約 10 分鐘。",
+            transportTitle: "大眾運輸",
+            transportOptionA: "方案 A：火車轉乘",
+            transportOptionADescription: "搭至屏東火車站，轉搭計程車約 20 分鐘。",
+            transportOptionB: "方案 B：屏東客運",
+            transportOptionBDescription: "搭乘 8217、8218、8220 至「九如鄉果菜市場」下車，步行約 10–15 分鐘。",
+            rulesEnglish: "Service & Rules",
+            rulesTitle: "園區服務與須知"
+        },
+        faq: { english: "Q & A", title: "農場小學堂" },
+        contact: {
+            english: "Contact Us",
+            title: "預約・洽詢・聯繫",
+            intro: "無論是訂位用餐、團體導覽、DIY 預約或場地租借，歡迎透過以下方式聯繫我們",
+            diningLabel: "餐廳訂位",
+            diningNote: "10 人以上建議預約",
+            shopLabel: "展售／商品",
+            shopNote: "產品諮詢與訂購",
+            facebookLabel: "FB 粉專私訊",
+            facebookName: "大花玫瑰",
+            facebookNote: "導覽・DIY・場地預約"
+        },
+        footer: { name: "大花農場 Grand Blossom Grange", copyright: "© 2026 All Rights Reserved." }
     },
 
     // ========== Hero 輪播 ==========

@@ -586,8 +586,10 @@ function validateDiyGroups_(contentRows) {
 }
 
 function isImageKey_(key) {
-  return /(?:^|\.)(?:image|img)$/.test(key)
+  return key === 'siteConfig.mapImage'
+    || /(?:^|\.)(?:image|img)$/.test(key)
     || /\.images\.\d+$/.test(key)
+    || /\.images\.\d+\.src$/.test(key)
     || /^siteConfig\.diningImages\.\d+$/.test(key);
 }
 
@@ -655,6 +657,19 @@ function makeEditorLabel_(entry) {
   }
   const factsMatch = key.match(/\.facts\.(\d+)$/);
   if (factsMatch) return `${entry.item}｜重點 ${Number(factsMatch[1]) + 1}`;
+  const listMatch = key.match(/\.(tags|highlights)\.(\d+)$/);
+  if (listMatch) {
+    return `${entry.item}｜${listMatch[1] === 'tags' ? '標籤' : '特色重點'} ${Number(listMatch[2]) + 1}`;
+  }
+  const statMatch = key.match(/\.stats\.(\d+)\.(icon|label|value)$/);
+  if (statMatch) {
+    const statNames = { icon: '圖示', label: '名稱', value: '內容' };
+    return `${entry.item}｜數字資訊 ${Number(statMatch[1]) + 1}・${statNames[statMatch[2]]}`;
+  }
+  const modalImageMatch = key.match(/\.images\.(\d+)(?:\.(src|caption))?$/);
+  if (modalImageMatch) {
+    return `${entry.item}｜彈窗圖片 ${Number(modalImageMatch[1]) + 1}${modalImageMatch[2] === 'caption' ? '・說明' : '・網址'}`;
+  }
 
   const faqMatch = key.match(/^qa\.categories\.\d+\.list\.(\d+)\.(q|a)$/);
   if (faqMatch) {
@@ -674,6 +689,17 @@ function makeEditorLabel_(entry) {
     half: '半票', halfDiscount: '半票折抵', freeRule: '免票規則', time: '營業時間',
     note: '補充說明', price: '價格', subPrice: '價格單位', name: '名稱',
     tag: '時長', group: '成團人數', image: '圖片網址', img: '圖片網址', title: '標題', desc: '描述',
+    titleEn: '英文標題', sub: '英文副標', period: '期間', rarity: '出現時節', caption: '圖片說明',
+    address: '農場地址', mapUrl: 'Google Map 網址', facebookUrl: 'Facebook 網址', mapImage: '園區地圖圖片',
+    halfTicketRule: '半票適用對象', badge: '主視覺標籤', subtitle: '副標題', tagline1: '主視覺標語第一行',
+    tagline2: '主視覺標語第二行', paragraph1: '第一段', paragraph2: '第二段', paragraph3: '第三段',
+    paragraph4: '第四段', title1: '標題第一行', title2: '標題第二行', english: '英文標題', lead: '服務項目摘要',
+    calendarEnglish: '花曆英文標題', calendarTitle: '花曆標題', calendarHint: '花曆操作提示',
+    cuisineEnglish: '料理區英文標題', cuisineTitle1: '料理區標題第一行', cuisineTitle2: '料理區標題第二行',
+    cuisineParagraph1: '料理介紹第一段', cuisineParagraph2: '料理介紹第二段', cuisineEmphasis: '料理介紹強調句',
+    intro1: '導言第一段', intro2: '導言第二段', driveTitle: '開車標題', driveDescription: '開車說明',
+    transportTitle: '大眾運輸標題', transportOptionA: '交通方案 A 標題', transportOptionADescription: '交通方案 A 說明',
+    transportOptionB: '交通方案 B 標題', transportOptionBDescription: '交通方案 B 說明', copyright: '版權文字',
     q: '問題', a: '答案',
   };
   return `${entry.item}｜${names[field] || field}`;

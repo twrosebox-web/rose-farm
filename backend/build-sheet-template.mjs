@@ -7,9 +7,11 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 const outputDir = path.join(repoRoot, "outputs", "phase3-rose-farm");
 const dataSource = await fs.readFile(path.join(repoRoot, "js", "data.js"), "utf8");
+const modalSource = await fs.readFile(path.join(repoRoot, "js", "data-modals.js"), "utf8");
 const context = { window: {} };
 vm.createContext(context);
 vm.runInContext(dataSource, context);
+vm.runInContext(modalSource, context);
 const data = context.window.DATA;
 
 const now = new Date().toISOString();
@@ -40,11 +42,47 @@ function addImageRow(section, item, key, value, required = true) {
   addRow(section, item, key, value, "完整圖片網址，必須以 https:// 開頭。", required);
 }
 
+const pageSectionNames = {
+  hero: "首頁主視覺", story: "品牌故事", overview: "體驗總覽", gallery: "園區相簿",
+  seasons: "四季花園", ecology: "生態觀察", services: "導覽與場租", dining: "玫瑰餐廳",
+  products: "伴手禮", diy: "DIY 體驗", visitor: "參觀資訊", faq: "常見問題",
+  contact: "聯繫區", footer: "頁尾",
+};
+
+const pageFieldNames = {
+  badge: "標籤", title: "標題", subtitle: "副標題", english: "英文標題", description: "說明",
+  intro: "導言", intro1: "導言第一段", intro2: "導言第二段", paragraph1: "第一段",
+  paragraph2: "第二段", paragraph3: "第三段", paragraph4: "第四段", lead: "服務項目摘要",
+  name: "名稱", copyright: "版權文字",
+};
+
+function addPageContentRows() {
+  Object.entries(data.pageContent || {}).forEach(([sectionKey, fields]) => {
+    const sectionName = pageSectionNames[sectionKey] || sectionKey;
+    Object.entries(fields || {}).forEach(([field, value]) => {
+      addRow(
+        `頁面文案｜${sectionName}`,
+        pageFieldNames[field] || field,
+        `pageContent.${sectionKey}.${field}`,
+        value,
+        "公開頁面可見文字；請使用繁體中文與全形標點。",
+        true,
+      );
+    });
+  });
+}
+
 addRow("基本資訊", "官網", "homeUrl", data.homeUrl, "回官網按鈕連結；請填完整 https:// 網址。", true);
 addRow("基本資訊", "聯絡電話", "siteConfig.phone", data.siteConfig.phone, "電話格式固定為 08-810-1858。", true);
 addRow("基本資訊", "展售室手機", "siteConfig.shopPhone", data.siteConfig.shopPhone, "電話格式固定為 0987-019-118。", true);
-addRow("公告", "是否顯示", "siteConfig.announcement.enabled", false, "預留欄位；前端公告區完成後才會顯示。", false);
-addRow("公告", "公告內容", "siteConfig.announcement.text", "", "預留欄位；請使用繁體中文與全形標點。", false);
+addRow("基本資訊", "農場地址", "siteConfig.address", data.siteConfig.address, "公開頁面聯繫區顯示的完整地址。", true);
+addRow("基本資訊", "Google Map", "siteConfig.mapUrl", data.siteConfig.mapUrl, "導航按鈕連結；請填完整 https:// 網址。", true);
+addRow("基本資訊", "Facebook 粉專", "siteConfig.facebookUrl", data.siteConfig.facebookUrl, "粉專私訊卡片連結；請填完整 https:// 網址。", true);
+addImageRow("圖片｜參觀資訊", "園區地圖", "siteConfig.mapImage", data.siteConfig.mapImage, true);
+addRow("票價", "半票適用對象", "siteConfig.halfTicketRule", data.siteConfig.halfTicketRule, "顯示在半票價格下方；請使用繁體中文與全形標點。", true);
+addRow("公告", "是否顯示", "siteConfig.announcement.enabled", data.siteConfig.announcement.enabled, "預留欄位；前端公告區完成後才會顯示。", false);
+addRow("公告", "公告內容", "siteConfig.announcement.text", data.siteConfig.announcement.text, "預留欄位；請使用繁體中文與全形標點。", false);
+addPageContentRows();
 
 const ticketFields = [
   ["全票", "full", "全票售價，只填數字。"],
@@ -63,9 +101,30 @@ if (infoIndex >= 0) {
   addRow("基本資訊", "公休日", `bentoItems.${infoIndex}.note`, data.bentoItems[infoIndex].note, "請填固定公休日或臨時休園說明。", true);
 }
 
+data.features.forEach((feature, featureIndex) => {
+  const item = feature.title || `特色 ${featureIndex + 1}`;
+  addRow("三大特色", item, `features.${featureIndex}.titleEn`, feature.titleEn, "特色英文小標。", true);
+  addRow("三大特色", item, `features.${featureIndex}.title`, feature.title, "特色主標題。", true);
+  addRow("三大特色", item, `features.${featureIndex}.desc`, feature.desc, "特色介紹段落。", true);
+});
+
+data.bentoItems.forEach((bento, bentoIndex) => {
+  const item = bento.title || `體驗卡片 ${bentoIndex + 1}`;
+  addRow("體驗拼貼卡", item, `bentoItems.${bentoIndex}.title`, bento.title, "首頁拼貼卡片標題。", true);
+  if (Object.hasOwn(bento, "desc")) addRow("體驗拼貼卡", item, `bentoItems.${bentoIndex}.desc`, bento.desc, "首頁拼貼卡片描述。", true);
+  (bento.tags || []).forEach((tag, tagIndex) => {
+    addRow("體驗拼貼卡", item, `bentoItems.${bentoIndex}.tags.${tagIndex}`, tag, "卡片下方短標籤。", false);
+  });
+});
+
 data.services.forEach((service, serviceIndex) => {
   const item = service.title || `服務 ${serviceIndex + 1}`;
+  addRow("體驗服務", item, `services.${serviceIndex}.title`, service.title, "服務卡片標題。", true);
   addRow("體驗服務", item, `services.${serviceIndex}.price`, service.price, "卡片可見價格；請保留單位。", true);
+  addRow("體驗服務", item, `services.${serviceIndex}.desc`, service.desc, "服務卡片簡短描述。", true);
+  (service.tags || []).forEach((tag, tagIndex) => {
+    addRow("體驗服務", item, `services.${serviceIndex}.tags.${tagIndex}`, tag, "服務卡片短標籤。", false);
+  });
   (service.facts || []).forEach((fact, factIndex) => {
     addRow("體驗服務", item, `services.${serviceIndex}.facts.${factIndex}`, fact, "卡片可見的人數、時段或容量資訊。", false);
   });
@@ -107,6 +166,27 @@ data.food.forEach((food, foodIndex) => {
   addRow("餐廳｜更多料理", item, `food.${foodIndex}.name`, food.name, "料理卡片名稱。", true);
   addRow("餐廳｜更多料理", item, `food.${foodIndex}.desc`, food.desc, "料理卡片描述。", true);
   addImageRow("餐廳｜更多料理", item, `food.${foodIndex}.image`, food.image, true);
+});
+
+data.gallery.forEach((gallery, galleryIndex) => {
+  addRow("園區相簿", gallery.title, `gallery.${galleryIndex}.title`, gallery.title, "相簿主圖與縮圖的圖片名稱。", true);
+});
+data.seasons.forEach((season, seasonIndex) => {
+  addRow("四季花況", season.name, `seasons.${seasonIndex}.name`, season.name, "季節卡片名稱。", true);
+  addRow("四季花況", season.name, `seasons.${seasonIndex}.period`, season.period, "花況期間。", true);
+  addRow("四季花況", season.name, `seasons.${seasonIndex}.desc`, season.desc, "季節卡片描述。", true);
+});
+data.eco.forEach((eco, ecoIndex) => {
+  addRow("生態觀察", eco.name, `eco.${ecoIndex}.name`, eco.name, "生態卡片名稱。", true);
+  addRow("生態觀察", eco.name, `eco.${ecoIndex}.desc`, eco.desc, "生態卡片描述。", true);
+  addRow("生態觀察", eco.name, `eco.${ecoIndex}.rarity`, eco.rarity, "出現季節或稀有程度。", true);
+});
+data.products.forEach((product, productIndex) => {
+  addRow("伴手禮", product.name, `products.${productIndex}.name`, product.name, "商品卡片名稱。", true);
+  addRow("伴手禮", product.name, `products.${productIndex}.desc`, product.desc, "商品卡片描述。", true);
+});
+data.navItems.forEach((navItem, navIndex) => {
+  addRow("頁面導覽", navItem.name, `navItems.${navIndex}.name`, navItem.name, "右下角電梯導覽顯示名稱。", true);
 });
 
 data.heroSlides.forEach((slide, slideIndex) => {
@@ -165,6 +245,33 @@ data.qa.categories.forEach((category, categoryIndex) => {
       addRow("FAQ", item, `qa.categories.${categoryIndex}.list.${faqIndex}.rows.${rowIndex}.value`, tableRow.value, "表格主要內容。", true);
       addRow("FAQ", item, `qa.categories.${categoryIndex}.list.${faqIndex}.rows.${rowIndex}.note`, tableRow.note, "補充說明；沒有內容可留空。", false);
     });
+  });
+});
+
+Object.entries(data.modalContent || {}).forEach(([modalKey, modal]) => {
+  const item = modal.title || modalKey;
+  if (Object.hasOwn(modal, "title")) addRow("彈窗內容", item, `modalContent.${modalKey}.title`, modal.title, "詳情彈窗主標題。", true);
+  if (Object.hasOwn(modal, "sub")) addRow("彈窗內容", item, `modalContent.${modalKey}.sub`, modal.sub, "詳情彈窗英文副標。", false);
+  if (Object.hasOwn(modal, "desc")) addRow("彈窗內容", item, `modalContent.${modalKey}.desc`, modal.desc, "詳情說明；可保留必要的 HTML 標記。", true);
+  if (Object.hasOwn(modal, "image")) addImageRow("彈窗圖片", item, `modalContent.${modalKey}.image`, modal.image, true);
+  (modal.tags || []).forEach((tag, tagIndex) => {
+    addRow("彈窗內容", item, `modalContent.${modalKey}.tags.${tagIndex}`, tag, "彈窗上方短標籤。", false);
+  });
+  (modal.stats || []).forEach((stat, statIndex) => {
+    addRow("彈窗內容", item, `modalContent.${modalKey}.stats.${statIndex}.icon`, stat.icon, "數字資訊圖示。", false);
+    addRow("彈窗內容", item, `modalContent.${modalKey}.stats.${statIndex}.label`, stat.label, "數字資訊名稱。", true);
+    addRow("彈窗內容", item, `modalContent.${modalKey}.stats.${statIndex}.value`, stat.value, "數字資訊內容，例如價格、人數或時長。", true);
+  });
+  (modal.highlights || []).forEach((highlight, highlightIndex) => {
+    addRow("彈窗內容", item, `modalContent.${modalKey}.highlights.${highlightIndex}`, highlight, "彈窗特色重點。", false);
+  });
+  (modal.images || []).forEach((image, imageIndex) => {
+    if (typeof image === "string") {
+      addImageRow("彈窗圖片", item, `modalContent.${modalKey}.images.${imageIndex}`, image, true);
+      return;
+    }
+    addImageRow("彈窗圖片", item, `modalContent.${modalKey}.images.${imageIndex}.src`, image.src, true);
+    addRow("彈窗圖片", item, `modalContent.${modalKey}.images.${imageIndex}.caption`, image.caption || "", "圖片說明；沒有內容可留空。", false);
   });
 });
 

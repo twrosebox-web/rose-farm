@@ -21,6 +21,7 @@ context.window.CSS = { escape(value) { return value; } };
 vm.createContext(context);
 
 vm.runInContext(fs.readFileSync(new URL('./data.js', import.meta.url), 'utf8'), context);
+vm.runInContext(fs.readFileSync(new URL('./data-modals.js', import.meta.url), 'utf8'), context);
 vm.runInContext(fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8'), context);
 
 const api = context.window.ADMIN_TESTING;
@@ -32,6 +33,8 @@ assert.equal(api.containsBrandTerm('有機農場'), true);
 assert.equal(api.isImageKey('diy.0.image'), true);
 assert.equal(api.isImageKey('siteConfig.diningImages.2'), true);
 assert.equal(api.isImageKey('features.1.images.4'), true);
+assert.equal(api.isImageKey('siteConfig.mapImage'), true);
+assert.equal(api.isImageKey('modalContent.modal-tour.images.0.src'), true);
 assert.equal(api.isImageKey('diningContent.ticketNotice'), false);
 
 assert.equal(api.categoryForEntry({ key: 'siteConfig.ticket.full' }), 'ticket');
@@ -39,6 +42,9 @@ assert.equal(api.categoryForEntry({ key: 'diningContent.groupNotice' }), 'dining
 assert.equal(api.categoryForEntry({ key: 'diy.2.price' }), 'diy');
 assert.equal(api.categoryForEntry({ key: 'qa.categories.0.list.1.q' }), 'faq');
 assert.equal(api.categoryForEntry({ key: 'services.1.price' }), 'services');
+assert.equal(api.categoryForEntry({ key: 'pageContent.story.paragraph1' }), 'copy');
+assert.equal(api.categoryForEntry({ key: 'features.1.desc' }), 'copy');
+assert.equal(api.categoryForEntry({ key: 'modalContent.modal-tour.desc' }), 'modals');
 assert.equal(api.categoryForEntry({ key: 'heroSlides.0.image' }), 'images');
 assert.equal(api.faqCategoryIndex({ key: 'qa.categories.3.list.2.q' }), '3');
 assert.equal(api.faqCategoryIndex({ key: 'qa.infoIcons.2.text' }), 'info');
@@ -55,15 +61,19 @@ assert.equal(api.isSafeImageUrl('javascript:alert(1)'), false);
 assert.equal(api.isSafeImageUrl('http://example.com/photo.jpg'), false);
 
 const entries = api.buildDemoEntries(context.window.DATA);
-assert.ok(entries.length > 150, `expected many editable fields, got ${entries.length}`);
-assert.equal(entries.filter((entry) => api.isImageKey(entry.key)).length, 75);
+assert.ok(entries.length > 400, `expected many editable fields, got ${entries.length}`);
+assert.ok(entries.filter((entry) => api.isImageKey(entry.key)).length > 100);
 assert.ok(entries.some((entry) => entry.key === 'diningContent.signatureTitle'));
 assert.ok(entries.some((entry) => entry.key === 'diningOptions.0.img'));
 assert.ok(entries.some((entry) => entry.key === 'diy.7.enabled'));
 assert.ok(entries.some((entry) => entry.key === 'qa.categories.0.list.0.q'));
 assert.ok(entries.some((entry) => entry.key === 'qa.categories.0.list.1.rows.0.value'));
 assert.ok(entries.some((entry) => entry.key === 'heroSlides.0.image'));
-assert.ok(!entries.some((entry) => entry.key === 'navItems.0.name'));
+assert.ok(entries.some((entry) => entry.key === 'pageContent.story.paragraph1'));
+assert.ok(entries.some((entry) => entry.key === 'features.0.desc'));
+assert.ok(entries.some((entry) => entry.key === 'navItems.0.name'));
+assert.ok(entries.some((entry) => entry.key === 'modalContent.modal-tour.desc'));
+assert.ok(entries.some((entry) => entry.key === 'modalContent.modal-tour.images.0.src'));
 
 const current = Object.fromEntries(entries.map((entry) => [entry.key, entry.value]));
 const faq = api.filterEntries(entries, 'faq', '小孩', false, new Set(), current);

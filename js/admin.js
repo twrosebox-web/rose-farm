@@ -7,6 +7,8 @@
         { id: 'dining', icon: '🍽️', label: '玫瑰餐廳', kicker: 'DINING', description: '修改餐廳主文案、料理、套餐、團體提醒與餐廳圖片。' },
         { id: 'diy', icon: '🎨', label: 'DIY 體驗', kicker: 'DIY WORKSHOP', description: '一次查看全部 DIY，可直接新增、修改或下架項目。' },
         { id: 'faq', icon: '❓', label: '常見問題', kicker: 'FAQ', description: '題目與答案分開顯示，避免編輯時看錯欄位。' },
+        { id: 'copy', icon: '✍️', label: '頁面文案', kicker: 'PAGE COPY', description: '修改首頁各區標題、品牌故事、交通說明與聯繫文案。' },
+        { id: 'modals', icon: '▣', label: '彈窗內容', kicker: 'DETAIL WINDOWS', description: '修改導覽、場租、餐飲與 DIY 詳情彈窗的文字及圖片。' },
         { id: 'images', icon: '🖼️', label: '全站圖片', kicker: 'IMAGES', description: '集中查看圖片縮圖與網址，換圖時可以立即確認。' },
         { id: 'services', icon: '🌿', label: '導覽與場租', kicker: 'SERVICES', description: '修改導覽、婚禮、採摘與場地租借的價格及重點資訊。' },
         { id: 'announcement', icon: '📣', label: '公告花況', kicker: 'ANNOUNCEMENT', description: '控制公告是否顯示，並修改最新公告內容。' },
@@ -18,7 +20,23 @@
         full: '全票', fullDiscount: '全票折抵', half: '半票', halfDiscount: '半票折抵', freeRule: '免費入園規則',
         enabled: '顯示此項目', name: '名稱', title: '標題', price: '價格', tag: '時長', group: '成團人數',
         image: '圖片網址', img: '圖片網址', q: '問題', a: '答案', text: '文字內容', note: '補充說明',
-        value: '內容', label: '項目', desc: '簡短描述', period: '期間',
+        value: '內容', label: '項目', desc: '簡短描述', period: '期間', titleEn: '英文標題', sub: '英文副標',
+        rarity: '出現時節', caption: '圖片說明', address: '農場地址', mapUrl: 'Google Map 網址',
+        facebookUrl: 'Facebook 網址', mapImage: '園區地圖圖片', halfTicketRule: '半票適用對象',
+        badge: '主視覺標籤', subtitle: '副標題', tagline1: '主視覺標語第一行', tagline2: '主視覺標語第二行',
+        paragraph1: '第一段', paragraph2: '第二段', paragraph3: '第三段', paragraph4: '第四段',
+        title1: '標題第一行', title2: '標題第二行', english: '英文標題', lead: '服務項目摘要',
+        calendarEnglish: '花曆英文標題', calendarTitle: '花曆標題', calendarHint: '花曆操作提示',
+        cuisineEnglish: '料理區英文標題', cuisineTitle1: '料理區標題第一行', cuisineTitle2: '料理區標題第二行',
+        cuisineParagraph1: '料理介紹第一段', cuisineParagraph2: '料理介紹第二段', cuisineEmphasis: '料理介紹強調句',
+        signatureLabel: '招牌料理圖片標籤', signatureChoice: '招牌料理推薦標籤', optionsTitle: '用餐方案標題',
+        moreEnglish: '更多料理英文標題', moreTitle: '更多料理標題', mapButton: '地圖按鈕文字',
+        intro1: '導言第一段', intro2: '導言第二段', driveTitle: '開車標題', driveDescription: '開車說明',
+        transportTitle: '大眾運輸標題', transportOptionA: '交通方案 A 標題', transportOptionADescription: '交通方案 A 說明',
+        transportOptionB: '交通方案 B 標題', transportOptionBDescription: '交通方案 B 說明',
+        rulesEnglish: '園區須知英文標題', rulesTitle: '園區須知標題', copyright: '版權文字',
+        diningLabel: '餐廳卡片標題', diningNote: '餐廳卡片提醒', shopLabel: '展售卡片標題', shopNote: '展售卡片提醒',
+        facebookLabel: 'Facebook 卡片標題', facebookName: 'Facebook 名稱', facebookNote: 'Facebook 卡片提醒',
         ticketNotice: '門票折抵提示', signatureTitle: '招牌料理名稱', signatureEnglish: '招牌料理英文名稱',
         signatureDescription1: '招牌料理描述（第一段）', signatureDescription2: '招牌料理描述（第二段）',
         highlight1Title: '特色一標題', highlight1Description: '特色一描述',
@@ -47,9 +65,11 @@
     function escapeAttr(value) { return escapeHtml(value).replace(/`/g, '&#096;'); }
     function containsBrandTerm(value) { return /有機|organic/i.test(String(value == null ? '' : value)); }
     function isImageKey(key) {
-        return /(^|\.)(image|img)(\.|$)/.test(key)
+        return key === 'siteConfig.mapImage'
+            || /(^|\.)(image|img)(\.|$)/.test(key)
             || /^siteConfig\.diningImages\.\d+$/.test(key)
-            || /^features\.\d+\.images\.\d+$/.test(key);
+            || /^features\.\d+\.images\.\d+$/.test(key)
+            || /^modalContent\.[^.]+\.images\.\d+(?:\.src)?$/.test(key);
     }
 
     function imageCategoryForKey(key) {
@@ -63,12 +83,14 @@
         if (/^diy\./.test(key)) return 'diy';
         if (/^services\./.test(key)) return 'services';
         if (/^products\./.test(key)) return 'products';
+        if (/^modalContent\./.test(key)) return 'modals';
         return 'other';
     }
 
     function imageLocationHint(key) {
         var firstIndex = key.match(/\.(\d+)/);
         var number = firstIndex ? Number(firstIndex[1]) + 1 : 1;
+        if (key === 'siteConfig.mapImage') return '參觀資訊區的園區地圖；點開後的大圖也會同步更換。';
         if (/^heroSlides\./.test(key)) return '首頁最上方主視覺輪播，第 ' + number + ' 張。';
         if (/^features\.(\d+)\.images\.(\d+)$/.test(key)) {
             var match = key.match(/^features\.(\d+)\.images\.(\d+)$/);
@@ -87,6 +109,7 @@
         if (/^diy\./.test(key)) return 'DIY 體驗方案卡片，第 ' + number + ' 張。';
         if (/^services\./.test(key)) return '導覽、婚禮或場地服務卡片，第 ' + number + ' 張。';
         if (/^products\./.test(key)) return '伴手禮商品卡片，第 ' + number + ' 張。';
+        if (/^modalContent\./.test(key)) return '服務、餐飲或 DIY 的詳情彈窗圖片。';
         return '網站內容圖片；可從草稿預覽點圖確認實際位置。';
     }
 
@@ -113,7 +136,11 @@
         if (key.indexOf('diningContent.') === 0 || key.indexOf('diningOptions.') === 0 || key.indexOf('food.') === 0 || key.indexOf('siteConfig.diningImages.') === 0) return 'dining';
         if (key.indexOf('siteConfig.ticket.') === 0) return 'ticket';
         if (key.indexOf('siteConfig.announcement.') === 0) return 'announcement';
+        if (/^bentoItems\.\d+\.(time|note)$/.test(key)) return 'basic';
+        if (key.indexOf('pageContent.') === 0) return 'copy';
+        if (key.indexOf('modalContent.') === 0) return 'modals';
         if (key.indexOf('services.') === 0) return 'services';
+        if (/^(features|bentoItems|gallery|seasons|eco|products|navItems)\./.test(key) && !isImageKey(key)) return 'copy';
         if (isImageKey(key)) return 'images';
         return 'basic';
     }
@@ -139,17 +166,30 @@
 
     function allowedDemoKey(key) {
         return key === 'homeUrl'
-            || /^siteConfig\.(phone|shopPhone)$/.test(key)
+            || /^siteConfig\.(phone|shopPhone|address|mapUrl|facebookUrl|mapImage|halfTicketRule)$/.test(key)
             || /^siteConfig\.(ticket|announcement|diningImages)\./.test(key)
-            || /^bentoItems\.\d+\.(time|note|img)$/.test(key)
-            || /^services\.\d+\.(price|img)$/.test(key)
+            || /^pageContent\./.test(key)
+            || /^features\.\d+\.(titleEn|title|desc)$/.test(key)
+            || /^bentoItems\.\d+\.(title|desc|time|note|img)$/.test(key)
+            || /^bentoItems\.\d+\.tags\.\d+$/.test(key)
+            || /^services\.\d+\.(title|price|desc|img)$/.test(key)
+            || /^services\.\d+\.tags\.\d+$/.test(key)
             || /^services\.\d+\.facts\.\d+$/.test(key)
             || /^diningContent\./.test(key)
             || /^diningOptions\.\d+\.(title|desc|price|subPrice|img)$/.test(key)
             || /^food\.\d+\.(name|desc|image)$/.test(key)
-            || /^(heroSlides|gallery|seasons|eco|products)\.\d+\.image$/.test(key)
+            || /^gallery\.\d+\.(title|image)$/.test(key)
+            || /^seasons\.\d+\.(name|period|desc|image)$/.test(key)
+            || /^eco\.\d+\.(name|desc|rarity|image)$/.test(key)
+            || /^products\.\d+\.(name|desc|image)$/.test(key)
+            || /^heroSlides\.\d+\.image$/.test(key)
             || /^features\.\d+\.images\.\d+$/.test(key)
             || /^diy\.\d+\.(enabled|name|price|tag|group|image)$/.test(key)
+            || /^navItems\.\d+\.name$/.test(key)
+            || /^modalContent\.[^.]+\.(title|sub|desc|image)$/.test(key)
+            || /^modalContent\.[^.]+\.(tags|highlights)\.\d+$/.test(key)
+            || /^modalContent\.[^.]+\.stats\.\d+\.(icon|label|value)$/.test(key)
+            || /^modalContent\.[^.]+\.images\.\d+(?:\.(src|caption))?$/.test(key)
             || /^qa\.infoIcons\.\d+\.(title|text)$/.test(key)
             || /^qa\.categories\.\d+\.name$/.test(key)
             || /^qa\.categories\.\d+\.list\.\d+\.(q|a)$/.test(key)
@@ -166,7 +206,33 @@
         return '';
     }
 
+    function demoFieldLabel(key, field) {
+        var match = key.match(/\.(tags|highlights|facts)\.(\d+)$/);
+        if (match) {
+            var names = { tags: '標籤', highlights: '特色重點', facts: '卡片重點' };
+            return names[match[1]] + ' ' + (Number(match[2]) + 1);
+        }
+        match = key.match(/\.stats\.(\d+)\.(icon|label|value)$/);
+        if (match) {
+            var statNames = { icon: '圖示', label: '名稱', value: '內容' };
+            return '數字資訊 ' + (Number(match[1]) + 1) + '・' + statNames[match[2]];
+        }
+        match = key.match(/\.images\.(\d+)(?:\.(src|caption))?$/);
+        if (match) return '彈窗圖片 ' + (Number(match[1]) + 1) + (match[2] === 'caption' ? '・說明' : '・網址');
+        return FIELD_LABELS[field] || field;
+    }
+
     function demoSectionForKey(key) {
+        var pageMatch = key.match(/^pageContent\.([^.]+)\./);
+        if (pageMatch) {
+            var pageNames = {
+                hero: '首頁主視覺', story: '品牌故事', overview: '體驗總覽', gallery: '園區相簿',
+                seasons: '四季花園', ecology: '生態觀察', services: '導覽與場租', dining: '玫瑰餐廳',
+                products: '伴手禮', diy: 'DIY 體驗', visitor: '參觀資訊', faq: '常見問題',
+                contact: '聯繫區', footer: '頁尾'
+            };
+            return '頁面文案｜' + (pageNames[pageMatch[1]] || pageMatch[1]);
+        }
         var category = categoryForEntry({ key: key });
         return navItem(category).label;
     }
@@ -185,9 +251,14 @@
             var field = lastSegment(keyPath);
             var indexMatch = keyPath.match(/\.(\d+)\./);
             var item = parentLabel || (indexMatch ? '第 ' + (Number(indexMatch[1]) + 1) + ' 項' : demoSectionForKey(keyPath));
+            if (keyPath.indexOf('modalContent.') === 0) {
+                var modalKey = path[1];
+                var modal = data.modalContent && data.modalContent[modalKey];
+                item = modal && modal.title ? modal.title : modalKey;
+            }
             result.push({
                 section: demoSectionForKey(keyPath), item: String(item), key: keyPath,
-                label: FIELD_LABELS[field] || field, value: value, draftValue: value, type: type,
+                label: demoFieldLabel(keyPath, field), value: value, draftValue: value, type: type,
                 required: field !== 'note' && field !== 'subPrice' && !(/^diy\.\d+\./.test(keyPath) && value === ''),
                 guidance: isImageKey(keyPath) ? '貼上 https:// 開頭的圖片網址，縮圖會立即更新。' : '', updatedAt: '', editorRow: null
             });
@@ -451,7 +522,8 @@
             { id: 'gallery', label: '園區相簿' }, { id: 'seasons', label: '四季花況' },
             { id: 'eco', label: '生態觀察' }, { id: 'dining', label: '玫瑰餐廳' },
             { id: 'diy', label: 'DIY 體驗' }, { id: 'services', label: '導覽與場租' },
-            { id: 'products', label: '伴手禮' }, { id: 'other', label: '其他圖片' }
+            { id: 'products', label: '伴手禮' }, { id: 'modals', label: '詳情彈窗' },
+            { id: 'other', label: '其他圖片' }
         ];
         var images = state.entries.filter(function (entry) { return isImageKey(entry.key); });
         return definitions.map(function (definition) {

@@ -82,8 +82,11 @@
 
         // 地圖
         if (key === 'modal-map') {
+            var mapImage = window.DATA && window.DATA.siteConfig && window.DATA.siteConfig.mapImage
+                ? window.DATA.siteConfig.mapImage
+                : 'https://res.cloudinary.com/daypc93hn/image/upload/v1760079811/park-map-original_in4u4q.jpg';
             ct.className = "bg-white p-0 w-[95vw] h-[95vh] overflow-auto relative shadow-2xl animate-fadeIn";
-            ct.innerHTML = '<div class="relative md:min-w-[1200px] md:min-h-[800px] w-full h-full bg-gray-100 flex items-center justify-center"><button onclick="window.closeModal()" class="fixed top-4 right-4 md:top-8 md:right-8 z-[100] w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-black/80 text-white shadow-xl text-2xl md:text-4xl cursor-pointer">✕</button><img src="https://res.cloudinary.com/daypc93hn/image/upload/v1760079811/park-map-original_in4u4q.jpg" class="!w-full !h-auto md:!h-full !object-contain md:!object-cover" alt="園區地圖"><p class="absolute bottom-4 left-0 right-0 text-center text-gray-400 text-sm md:hidden">雙指縮放查看細節</p></div>';
+            ct.innerHTML = '<div class="relative md:min-w-[1200px] md:min-h-[800px] w-full h-full bg-gray-100 flex items-center justify-center"><button onclick="window.closeModal()" class="fixed top-4 right-4 md:top-8 md:right-8 z-[100] w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-black/80 text-white shadow-xl text-2xl md:text-4xl cursor-pointer">✕</button><img src="'+mapImage+'" data-content-key="siteConfig.mapImage" class="!w-full !h-auto md:!h-full !object-contain md:!object-cover" alt="園區地圖"><p class="absolute bottom-4 left-0 right-0 text-center text-gray-400 text-sm md:hidden">雙指縮放查看細節</p></div>';
         } else if (d) {
 
             // Teaser

@@ -56,6 +56,12 @@
         return false;
     }
 
+    function getByPath(root, path) {
+        return String(path || '').split('.').reduce(function(value, part) {
+            return value == null ? undefined : value[part];
+        }, root);
+    }
+
     function isUserBusy() {
         var selection = window.getSelection && window.getSelection();
         if (selection && selection.toString().length > 0) return true;
@@ -133,6 +139,40 @@
                 if (element) element.src = src;
             });
         }
+
+        element = document.getElementById('half-ticket-rule');
+        if (element && configData.halfTicketRule) element.textContent = configData.halfTicketRule;
+
+        element = document.getElementById('park-map-image');
+        if (element && configData.mapImage) {
+            element.src = configData.mapImage;
+            element.dataset.contentKey = 'siteConfig.mapImage';
+        }
+
+        element = document.getElementById('map-navigation-button');
+        if (element && configData.mapUrl) {
+            element.onclick = function() { window.open(configData.mapUrl, '_blank', 'noopener,noreferrer'); };
+        }
+
+        element = document.getElementById('facebook-contact-link');
+        if (element && configData.facebookUrl) element.href = configData.facebookUrl;
+
+        element = document.getElementById('contact-location-line');
+        if (element && configData.address) {
+            var infoItem = (window.DATA.bentoItems || []).find(function(item) { return item.type === 'info'; }) || {};
+            element.textContent = configData.address + ' ｜ 營業時間 ' + (infoItem.time || '') + (infoItem.note ? '（' + infoItem.note + '）' : '');
+        }
+    }
+
+    function renderPageContent() {
+        var content = window.DATA && window.DATA.pageContent;
+        if (!content) return;
+        document.querySelectorAll('[data-page-key]').forEach(function(element) {
+            var value = getByPath(content, element.dataset.pageKey);
+            if (value == null) return;
+            element.textContent = String(value);
+            element.dataset.contentKey = 'pageContent.' + element.dataset.pageKey;
+        });
     }
 
     function renderStaticImages() {
@@ -181,9 +221,14 @@
         return renderScripts.reduce(function(chain, src) {
             return chain.then(function() { return loadRenderScript(src); });
         }, Promise.resolve()).then(function() {
-            renderSiteConfig();
-            renderStaticImages();
+            window.renderStaticContent();
         });
+    };
+
+    window.renderStaticContent = function() {
+        renderSiteConfig();
+        renderPageContent();
+        renderStaticImages();
     };
 
     function renderAndInstallInspector() {
