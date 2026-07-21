@@ -81,10 +81,20 @@ for (const id of ['admin-login', 'admin-nav', 'sidebar-toggle', 'editor-content'
     assert.match(html, new RegExp(`id=["']${id}["']`));
 }
 assert.match(html, /js\/admin\.js/);
+assert.match(html, /<nav id="mobile-nav"/);
+assert.match(html, /aria-describedby="confirm-message"/);
 
 const css = fs.readFileSync(new URL('../css/admin.css', import.meta.url), 'utf8');
 assert.match(css, /\.app-shell\.sidebar-collapsed \.sidebar/);
 assert.match(css, /@media \(max-width: 980px\)/);
 assert.match(css, /\.mobile-nav-hint/);
+assert.match(css, /env\(safe-area-inset-bottom/);
+assert.match(css, /\.toolbar \{ position: static/);
+assert.match(css, /max-height: calc\(100dvh - 36px\)/);
+
+const adminSource = fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
+assert.match(adminSource, /aria-current="page"/);
+assert.match(adminSource, /aria-pressed=/);
+assert.match(adminSource, /trapConfirmFocus/);
 
 console.log(`Admin tests passed (${entries.length} demo fields)`);

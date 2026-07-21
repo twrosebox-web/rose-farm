@@ -35,6 +35,7 @@
         passcode: '', connected: false, demo: false, activeSection: 'all', query: '', dirtyOnly: false,
         faqCategory: '0', imageCategory: 'hero', pendingConfirm: null, toastTimer: null
     };
+    var lastFocusedElement = null;
 
     function byId(id) { return document.getElementById(id); }
     function endpoint() { return String((window.CLOUD_CONFIG && window.CLOUD_CONFIG.endpoint) || '').trim(); }
@@ -235,7 +236,7 @@
     function renderNav() {
         var html = NAV_ITEMS.map(function (item) {
             var count = state.entries.filter(function (entry) { return matchesCategory(entry, item.id); }).length;
-            return '<button class="nav-button' + (state.activeSection === item.id ? ' active' : '') + '" type="button" data-section="' + item.id + '" aria-label="' + escapeAttr(item.label) + '" title="' + escapeAttr(item.label) + '">' +
+            return '<button class="nav-button' + (state.activeSection === item.id ? ' active' : '') + '" type="button" data-section="' + item.id + '" aria-label="' + escapeAttr(item.label) + '" title="' + escapeAttr(item.label) + '"' + (state.activeSection === item.id ? ' aria-current="page"' : '') + '>' +
                 '<span>' + item.icon + '</span><span>' + escapeHtml(item.label) + '</span><span class="nav-count">' + count + '</span></button>';
         }).join('');
         byId('admin-nav').innerHTML = html;
@@ -279,19 +280,19 @@
         var required = entry.required ? ' required' : '';
         var className = compact ? '' : ' data-field-control="true"';
         if (entry.type === 'boolean') {
-            return '<div class="switch-row"><label class="switch"><input type="checkbox" data-key="' + escapeAttr(key) + '" data-type="boolean"' + (value ? ' checked' : '') + '><span></span></label><strong>' + (value ? '目前顯示' : '目前隱藏') + '</strong></div>';
+            return '<div class="switch-row"><label class="switch"><input type="checkbox" data-key="' + escapeAttr(key) + '" data-type="boolean" aria-label="' + escapeAttr(entry.label) + '"' + (value ? ' checked' : '') + '><span></span></label><strong>' + (value ? '目前顯示' : '目前隱藏') + '</strong></div>';
         }
         if (isImageKey(key)) {
             var image = String(value || '');
             return '<div class="image-field"><div class="image-preview" data-preview-for="' + escapeAttr(key) + '">' +
                 (isSafeImageUrl(image) ? '<img src="' + escapeAttr(image) + '" alt="圖片預覽" loading="lazy">' : '<span>' + (image ? '圖片網址格式錯誤' : '尚未設定圖片') + '</span>') +
-                '</div><div><input type="url" data-key="' + escapeAttr(key) + '" data-type="string" value="' + escapeAttr(image) + '" placeholder="https://..."' + required + className + '>' +
+                '</div><div><input type="url" data-key="' + escapeAttr(key) + '" data-type="string" aria-label="' + escapeAttr(entry.label) + '" value="' + escapeAttr(image) + '" placeholder="https://..."' + required + className + '>' +
                 '<p class="field-help">' + escapeHtml(entry.guidance || '貼上 https:// 開頭的圖片網址，左側縮圖會立即更新。') + '</p></div></div>';
         }
         var text = String(value == null ? '' : value);
         var longField = text.length > 70 || /description|notice|\.a$|\.q$|\.text$|freeRule/i.test(key);
-        if (longField) return '<textarea data-key="' + escapeAttr(key) + '" data-type="' + escapeAttr(entry.type) + '"' + required + className + '>' + escapeHtml(text) + '</textarea>';
-        return '<input type="' + (entry.type === 'number' ? 'number' : 'text') + '" data-key="' + escapeAttr(key) + '" data-type="' + escapeAttr(entry.type) + '" value="' + escapeAttr(text) + '"' + required + className + '>';
+        if (longField) return '<textarea data-key="' + escapeAttr(key) + '" data-type="' + escapeAttr(entry.type) + '" aria-label="' + escapeAttr(entry.label) + '"' + required + className + '>' + escapeHtml(text) + '</textarea>';
+        return '<input type="' + (entry.type === 'number' ? 'number' : 'text') + '" data-key="' + escapeAttr(key) + '" data-type="' + escapeAttr(entry.type) + '" aria-label="' + escapeAttr(entry.label) + '" value="' + escapeAttr(text) + '"' + required + className + '>';
     }
 
     function renderFieldCard(entry) {
@@ -384,7 +385,7 @@
         return '<div class="faq-category-wrap"><div class="faq-category-heading"><strong>先選問題分類</strong><span>' +
             (state.query ? '搜尋時會比對所有分類' : '一次只看一類，比較好找') + '</span></div><div class="faq-category-bar">' +
             faqCategoryOptions().map(function (option) {
-                return '<button class="faq-category-button' + (active === option.id ? ' active' : '') + '" type="button" data-faq-category="' + escapeAttr(option.id) + '">' +
+                return '<button class="faq-category-button' + (active === option.id ? ' active' : '') + '" type="button" data-faq-category="' + escapeAttr(option.id) + '" aria-pressed="' + (active === option.id ? 'true' : 'false') + '">' +
                     '<span>' + escapeHtml(option.label) + '</span><small>' + option.count + ' 題</small></button>';
             }).join('') + '</div></div>';
     }
@@ -464,7 +465,7 @@
         return '<div class="image-category-wrap"><div class="image-category-heading"><div><strong>先選圖片出現的位置</strong><span>每張卡片都有實際縮圖與網站位置提示</span></div>' +
             '<span class="image-preview-legend">🖼️ 換網址後，預覽會立即更新</span></div><div class="image-category-bar">' +
             imageCategoryOptions().map(function (option) {
-                return '<button class="image-category-button' + (active === option.id ? ' active' : '') + '" type="button" data-image-category="' + escapeAttr(option.id) + '">' +
+                return '<button class="image-category-button' + (active === option.id ? ' active' : '') + '" type="button" data-image-category="' + escapeAttr(option.id) + '" aria-pressed="' + (active === option.id ? 'true' : 'false') + '">' +
                     '<span>' + escapeHtml(option.label) + '</span><small>' + option.count + ' 張</small></button>';
             }).join('') + '</div></div>';
     }
@@ -496,7 +497,7 @@
             renderImagePreview(value, key) + '<div class="image-manager-body"><div class="image-card-meta"><span>' + escapeHtml(imageCategoryLabel(key)) + '</span>' +
             (state.dirty.has(key) ? '<strong>尚未儲存</strong>' : '') + '</div><h4>' + escapeHtml(entry.item || entry.label) + '</h4>' +
             '<p class="image-location-hint"><b>出現位置：</b>' + escapeHtml(imageLocationHint(key)) + '</p>' +
-            '<label class="image-url-field"><span>圖片網址' + (entry.required ? ' <i>＊</i>' : '') + '</span><input type="url" data-key="' + escapeAttr(key) + '" data-type="string" value="' + escapeAttr(value) + '" placeholder="https://..."' + (entry.required ? ' required' : '') + '></label>' +
+            '<label class="image-url-field"><span>圖片網址' + (entry.required ? ' <i>＊</i>' : '') + '</span><input type="url" data-key="' + escapeAttr(key) + '" data-type="string" aria-label="' + escapeAttr((entry.item || entry.label) + '圖片網址') + '" value="' + escapeAttr(value) + '" placeholder="https://..."' + (entry.required ? ' required' : '') + '></label>' +
             '<p class="image-current-value">目前正式網址：' + escapeHtml(String(state.official[key] || '（空白）')) + '</p></div></article>';
     }
 
@@ -726,6 +727,7 @@
     }
 
     function openConfirm(options) {
+        lastFocusedElement = document.activeElement;
         state.pendingConfirm = options.onConfirm;
         byId('confirm-icon').textContent = options.icon || '⚠️';
         byId('confirm-title').textContent = options.title || '請再次確認';
@@ -734,9 +736,30 @@
         byId('brand-confirm-row').classList.toggle('hidden', !options.brand);
         byId('brand-confirm-checkbox').checked = false;
         byId('confirm-modal').classList.remove('hidden');
+        byId('admin-app').inert = true;
+        setTimeout(function () { byId('confirm-action').focus(); }, 0);
     }
 
-    function closeConfirm() { state.pendingConfirm = null; byId('confirm-modal').classList.add('hidden'); }
+    function closeConfirm() {
+        state.pendingConfirm = null;
+        byId('confirm-modal').classList.add('hidden');
+        byId('admin-app').inert = false;
+        if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
+        lastFocusedElement = null;
+    }
+
+    function trapConfirmFocus(event) {
+        if (event.key !== 'Tab' || byId('confirm-modal').classList.contains('hidden')) return;
+        var controls = Array.prototype.filter.call(
+            byId('confirm-modal').querySelectorAll('button:not([disabled]), input:not([disabled])'),
+            function (element) { return !element.closest('.hidden'); },
+        );
+        if (!controls.length) return;
+        var first = controls[0];
+        var last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
     function confirmAction() {
         var requiresBrand = !byId('brand-confirm-row').classList.contains('hidden');
         if (requiresBrand && !byId('brand-confirm-checkbox').checked) { showToast('請先勾選已完成品牌用語核決。', true); return; }
@@ -880,7 +903,10 @@
         [byId('confirm-close'), byId('confirm-cancel')].forEach(function (button) { button.addEventListener('click', closeConfirm); });
         byId('confirm-modal').addEventListener('mousedown', function (event) { event.currentTarget.dataset.downOnBackdrop = event.target === event.currentTarget ? '1' : '0'; });
         byId('confirm-modal').addEventListener('mouseup', function (event) { if (event.target === event.currentTarget && event.currentTarget.dataset.downOnBackdrop === '1') closeConfirm(); });
-        document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !byId('confirm-modal').classList.contains('hidden')) closeConfirm(); });
+        document.addEventListener('keydown', function (event) {
+            trapConfirmFocus(event);
+            if (event.key === 'Escape' && !byId('confirm-modal').classList.contains('hidden')) closeConfirm();
+        });
         window.addEventListener('beforeunload', function (event) { if (!state.dirty.size) return; event.preventDefault(); event.returnValue = ''; });
     }
 
