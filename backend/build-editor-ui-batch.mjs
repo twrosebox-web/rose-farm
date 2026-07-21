@@ -33,6 +33,12 @@ const cellData = (value, note) => {
   return cell;
 };
 
+const formulaCell = (formula, note) => {
+  const cell = { userEnteredValue: { formulaValue: formula } };
+  if (note) cell.note = note;
+  return cell;
+};
+
 const format = (range, userEnteredFormat, fields) => ({
   repeatCell: {
     range,
@@ -125,6 +131,7 @@ const outputRows = [
   [],
 ];
 const sectionRows = [];
+const sectionRowByName = new Map();
 const fieldRows = [];
 const numberRows = [];
 const booleanRows = [];
@@ -155,6 +162,7 @@ function pushEntry(entry) {
 sections.forEach((entries, section) => {
   const sheetRow = outputRows.length + 1;
   sectionRows.push(sheetRow);
+  sectionRowByName.set(section, sheetRow);
   outputRows.push([cellData(section)]);
   if (section !== 'DIY') {
     entries.forEach(pushEntry);
@@ -186,6 +194,11 @@ sections.forEach((entries, section) => {
     itemEntries.forEach(pushEntry);
   });
 });
+
+outputRows[5] = [
+  formulaCell(`=HYPERLINK("#gid=${editorId}&range=A${sectionRowByName.get('DIY')}:B${sectionRowByName.get('DIY')}","↓ 跳到 DIY 項目")`),
+  formulaCell(`=HYPERLINK("#gid=${editorId}&range=A${sectionRowByName.get('FAQ')}:B${sectionRowByName.get('FAQ')}","↓ 跳到 FAQ 問題")`),
+];
 
 const totalRows = outputRows.length;
 const gridRows = Math.max(220, totalRows + 10);
@@ -276,6 +289,16 @@ const requests = [
       borders: { bottom: { style: 'SOLID', colorStyle: { rgbColor: rgb('#dbc8bd') } } },
     },
     'backgroundColorStyle,textFormat,borders',
+  ),
+  format(
+    editorRange(5, 6, 0, 2),
+    {
+      backgroundColorStyle: { rgbColor: rgb('#e6f2e8') },
+      horizontalAlignment: 'CENTER',
+      textFormat: { bold: true, foregroundColorStyle: { rgbColor: rgb('#244b2b') } },
+      borders: { bottom: { style: 'SOLID', colorStyle: { rgbColor: rgb('#8ba888') } } },
+    },
+    'backgroundColorStyle,horizontalAlignment,textFormat,borders',
   ),
   format(
     editorRange(firstDataRow - 1, totalRows, 0, 1),
@@ -428,7 +451,7 @@ const requests = [
   ...[
     [0, 2, 38],
     [2, 5, 36],
-    [5, 6, 14],
+    [5, 6, 38],
   ].map(([startIndex, endIndex, pixelSize]) => ({
     updateDimensionProperties: {
       range: { sheetId: editorId, dimension: 'ROWS', startIndex, endIndex },
