@@ -6,6 +6,7 @@ const sheetRows = [
   ["區塊", "項目", "key", "目前值", "類型", "必填", "填寫說明", "updatedAt", "啟用"],
   ["票價", "全票", "siteConfig.ticket.full", 200, "number", "是", "只填數字", "2026-07-17T00:00:00.000Z", true],
   ["公告", "公告內容", "siteConfig.announcement.text", "", "string", "否", "可留空", "2026-07-17T00:00:00.000Z", true],
+  ["餐廳｜更多料理", "料理", "food.0.image", "https://example.com/food.jpg", "string", "是", "完整圖片網址", "2026-07-17T00:00:00.000Z", true],
   ["DIY", "DIY 項目 5", "diy.4.enabled", false, "boolean", "是", "", "2026-07-17T00:00:00.000Z", true],
   ["DIY", "DIY 項目 5", "diy.4.name", "", "string", "否", "", "2026-07-17T00:00:00.000Z", true],
   ["DIY", "DIY 項目 5", "diy.4.price", "", "string", "否", "", "2026-07-17T00:00:00.000Z", true],
@@ -105,6 +106,12 @@ assert.doesNotThrow(() => context.validateDiyGroups_([
   ["DIY", "DIY 項目 5", "diy.4.enabled", false, "boolean", "是", "", "", true],
   ["DIY", "DIY 項目 5", "diy.4.name", "", "string", "否", "", "", true],
 ]));
+assert.doesNotThrow(() => context.validateImageUrls_([
+  ["圖片", "料理", "food.0.image", "https://example.com/food.jpg", "string", "是", "", "", true],
+]));
+assert.throws(() => context.validateImageUrls_([
+  ["圖片", "料理", "food.0.image", "http://example.com/food.jpg", "string", "是", "", "", true],
+]), /https:\/\//);
 assert.equal(
   context.makeEditorLabel_({ item: "玫瑰花醬DIY", key: "diy.0.price" }),
   "價格",
@@ -136,6 +143,19 @@ const postResult = context.doPost({
 const postPayload = JSON.parse(postResult.text);
 assert.equal(postPayload.ok, true);
 assert.equal(sheetRows[1][3], 250);
+
+const invalidImagePost = context.doPost({
+  postData: {
+    contents: JSON.stringify({
+      passcode: "secret",
+      key: "food.0.image",
+      value: "http://example.com/unsafe.jpg",
+    }),
+  },
+});
+assert.equal(JSON.parse(invalidImagePost.text).ok, false);
+assert.match(JSON.parse(invalidImagePost.text).error, /https:\/\//);
+assert.equal(sheetRows[3][3], "https://example.com/food.jpg");
 assert.match(sheetRows[1][7], /^\d{4}-\d{2}-\d{2}T/);
 
 const getResult = context.doGet({ parameter: { callback: "roseFarmCloudCallback" } });
@@ -177,6 +197,6 @@ const incompleteDiyPost = context.doPost({
 });
 assert.equal(JSON.parse(incompleteDiyPost.text).ok, false);
 assert.match(JSON.parse(incompleteDiyPost.text).error, /啟用前/);
-assert.equal(sheetRows[3][3], false);
+assert.equal(sheetRows[4][3], false);
 
 console.log("Apps Script tests passed");

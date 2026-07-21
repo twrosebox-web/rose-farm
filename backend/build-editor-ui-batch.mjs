@@ -90,7 +90,9 @@ const fieldNames = {
   tag: '時長',
   group: '成團人數',
   image: '圖片網址',
+  img: '圖片網址',
   title: '標題',
+  desc: '描述',
   q: '問題',
   a: '答案',
 };
@@ -123,6 +125,10 @@ function makeLabel(item, key) {
       ? `❓ 題目內容 ${questionNumber}｜${category}`
       : `💬 答案內容 ${questionNumber}`;
   }
+  if (key.startsWith('diningContent.')) return item;
+  if (/(?:^|\.)(?:image|img)$/.test(key) || /\.images\.\d+$/.test(key) || /^siteConfig\.diningImages\.\d+$/.test(key)) {
+    return `${item}｜圖片網址`;
+  }
   const field = key.split('.').pop();
   return `${item}｜${fieldNames[field] || field}`;
 }
@@ -148,7 +154,7 @@ contentRows.forEach((row, index) => {
 const outputRows = [
   [cellData('🌹 大花農場｜批次內容編輯')],
   [],
-  [cellData('目前狀態'), cellData('待安裝 Apps Script')],
+  [cellData('目前狀態'), cellData(`已載入 ${contentRows.length} 個欄位`)],
   [cellData('重新載入全部內容'), cellData(false, '會放棄尚未儲存的修改，重新載入底層內容。')],
   [cellData('我已確認，儲存全部變更'), cellData(false, '改完多個黃色欄位後，只要勾選這裡一次。')],
   [],
@@ -160,12 +166,16 @@ const booleanRows = [];
 const diyItemHeaderRows = [];
 const questionRows = [];
 const answerRows = [];
+const imageRows = [];
 
 function pushEntry(entry) {
   const rowNumber = outputRows.length + 1;
   fieldRows.push(rowNumber);
   if (entry.type === 'number') numberRows.push(rowNumber);
   if (entry.type === 'boolean') booleanRows.push(rowNumber);
+  if (/(?:^|\.)(?:image|img)$/.test(entry.key) || /\.images\.\d+$/.test(entry.key) || /^siteConfig\.diningImages\.\d+$/.test(entry.key)) {
+    imageRows.push(rowNumber);
+  }
   if (/\.q$/.test(entry.key)) questionRows.push(rowNumber);
   if (/\.a$/.test(entry.key) || /\.rows\.\d+\.(label|value|note)$/.test(entry.key)) {
     answerRows.push(rowNumber);
@@ -222,7 +232,7 @@ sections.forEach((entries, section) => {
 
 outputRows[5] = [
   formulaCell(`=HYPERLINK("#gid=${editorId}&range=A"&(MATCH("DIY",A7:A,0)+7),"↓ 跳到 DIY 第一項")`),
-  formulaCell(`=HYPERLINK("#gid=${editorId}&range=B"&(MATCH("FAQ",A7:A,0)+7),"↓ 跳到 FAQ 第一題")`),
+  formulaCell(`=HYPERLINK("#gid=${editorId}&range=B"&(MATCH("FAQ*",A7:A,0)+7),"↓ 跳到 FAQ 第一題")`),
 ];
 
 const totalRows = outputRows.length;
@@ -437,6 +447,20 @@ const requests = [
       },
     },
   })),
+  ...imageRows.map((row) => ({
+    setDataValidation: {
+      range: editorRange(row - 1, row, 1, 2),
+      rule: {
+        condition: {
+          type: 'CUSTOM_FORMULA',
+          values: [{ userEnteredValue: `=OR(B${row}="",REGEXMATCH(B${row},"^https://"))` }],
+        },
+        inputMessage: '圖片網址必須以 https:// 開頭。',
+        strict: true,
+        showCustomUi: false,
+      },
+    },
+  })),
   {
     addConditionalFormatRule: {
       rule: {
@@ -565,7 +589,7 @@ const requests = [
   {
     updateCells: {
       range: { sheetId: controlId, startRowIndex: 9, endRowIndex: 10, startColumnIndex: 4, endColumnIndex: 5 },
-      rows: [{ values: [{ userEnteredValue: { stringValue: '待安裝\nApps Script' } }] }],
+      rows: [{ values: [{ userEnteredValue: { stringValue: '已安裝\nApps Script' } }] }],
       fields: 'userEnteredValue',
     },
   },
@@ -590,7 +614,7 @@ const requests = [
         { values: [
           { userEnteredValue: { formulaValue: `=HYPERLINK("#gid=${editorId}&range=A1:B8","① 全部內容")` } }, {},
           { userEnteredValue: { formulaValue: `=HYPERLINK("#gid=${editorId}&range=A"&(MATCH("DIY",'批次編輯'!A:A,0)+1),"② DIY 項目")` } }, {},
-          { userEnteredValue: { formulaValue: `=HYPERLINK("#gid=${editorId}&range=B"&(MATCH("FAQ",'批次編輯'!A:A,0)+1),"③ FAQ 第一題")` } }, {},
+          { userEnteredValue: { formulaValue: `=HYPERLINK("#gid=${editorId}&range=B"&(MATCH("FAQ*",'批次編輯'!A:A,0)+1),"③ FAQ 第一題")` } }, {},
         ] },
         { values: [{}, {}, {}, {}, {}, {}] },
       ],

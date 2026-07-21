@@ -36,6 +36,10 @@ function addRow(section, item, key, value, guidance, required = true) {
   ]);
 }
 
+function addImageRow(section, item, key, value, required = true) {
+  addRow(section, item, key, value, "完整圖片網址，必須以 https:// 開頭。", required);
+}
+
 addRow("基本資訊", "官網", "homeUrl", data.homeUrl, "回官網按鈕連結；請填完整 https:// 網址。", true);
 addRow("基本資訊", "聯絡電話", "siteConfig.phone", data.siteConfig.phone, "電話格式固定為 08-810-1858。", true);
 addRow("基本資訊", "展售室手機", "siteConfig.shopPhone", data.siteConfig.shopPhone, "電話格式固定為 0987-019-118。", true);
@@ -67,12 +71,69 @@ data.services.forEach((service, serviceIndex) => {
   });
 });
 
+const diningContentFields = [
+  ["門票折抵提示", "ticketNotice"],
+  ["招牌料理名稱", "signatureTitle"],
+  ["招牌料理英文名稱", "signatureEnglish"],
+  ["招牌料理描述（上段）", "signatureDescription1"],
+  ["招牌料理描述（下段）", "signatureDescription2"],
+  ["特色重點一標題", "highlight1Title"],
+  ["特色重點一描述", "highlight1Description"],
+  ["特色重點二標題", "highlight2Title"],
+  ["特色重點二描述", "highlight2Description"],
+  ["團體用餐提醒", "groupNotice"],
+];
+diningContentFields.forEach(([item, field]) => {
+  addRow("餐廳｜招牌料理", item, `diningContent.${field}`, data.diningContent[field], "直接顯示在餐廳區；請使用繁體中文與全形標點。", true);
+});
+
+data.siteConfig.diningImages.forEach((image, imageIndex) => {
+  addImageRow("餐廳｜圖片", `招牌料理區圖片 ${imageIndex + 1}`, `siteConfig.diningImages.${imageIndex}`, image, true);
+});
+
 data.diningOptions.forEach((option, optionIndex) => {
   const item = option.title || `餐飲方案 ${optionIndex + 1}`;
-  addRow("餐廳", item, `diningOptions.${optionIndex}.price`, option.price, "請填顯示價格；可使用「請洽專人」等文字。", true);
+  addRow("餐廳｜用餐方案", item, `diningOptions.${optionIndex}.title`, option.title, "方案卡片名稱。", true);
+  addRow("餐廳｜用餐方案", item, `diningOptions.${optionIndex}.desc`, option.desc, "方案卡片描述。", true);
+  addRow("餐廳｜用餐方案", item, `diningOptions.${optionIndex}.price`, option.price, "請填顯示價格；可使用「請洽專人」等文字。", true);
   if (Object.hasOwn(option, "subPrice")) {
-    addRow("餐廳", item, `diningOptions.${optionIndex}.subPrice`, option.subPrice, "價格後方的單位，例如「／桌」或「起／人」。", false);
+    addRow("餐廳｜用餐方案", item, `diningOptions.${optionIndex}.subPrice`, option.subPrice, "價格後方的單位，例如「／桌」或「起／人」。", false);
   }
+  addImageRow("餐廳｜用餐方案", item, `diningOptions.${optionIndex}.img`, option.img, true);
+});
+
+data.food.forEach((food, foodIndex) => {
+  const item = food.name || `料理 ${foodIndex + 1}`;
+  addRow("餐廳｜更多料理", item, `food.${foodIndex}.name`, food.name, "料理卡片名稱。", true);
+  addRow("餐廳｜更多料理", item, `food.${foodIndex}.desc`, food.desc, "料理卡片描述。", true);
+  addImageRow("餐廳｜更多料理", item, `food.${foodIndex}.image`, food.image, true);
+});
+
+data.heroSlides.forEach((slide, slideIndex) => {
+  addImageRow("圖片｜首頁輪播", `第 ${slideIndex + 1} 張`, `heroSlides.${slideIndex}.image`, slide.image, true);
+});
+data.features.forEach((feature, featureIndex) => {
+  feature.images.forEach((image, imageIndex) => {
+    addImageRow("圖片｜農場特色", `${feature.title}／第 ${imageIndex + 1} 張`, `features.${featureIndex}.images.${imageIndex}`, image, true);
+  });
+});
+data.bentoItems.forEach((item, itemIndex) => {
+  if (Object.hasOwn(item, "img")) addImageRow("圖片｜體驗總覽", item.title, `bentoItems.${itemIndex}.img`, item.img, true);
+});
+data.gallery.forEach((item, itemIndex) => {
+  addImageRow("圖片｜園區相簿", item.title, `gallery.${itemIndex}.image`, item.image, true);
+});
+data.seasons.forEach((season, seasonIndex) => {
+  addImageRow("圖片｜四季花景", season.name, `seasons.${seasonIndex}.image`, season.image, true);
+});
+data.eco.forEach((item, itemIndex) => {
+  addImageRow("圖片｜生態觀察", item.name, `eco.${itemIndex}.image`, item.image, true);
+});
+data.services.forEach((service, serviceIndex) => {
+  addImageRow("圖片｜體驗服務", service.title, `services.${serviceIndex}.img`, service.img, true);
+});
+data.products.forEach((product, productIndex) => {
+  addImageRow("圖片｜伴手禮", product.name, `products.${productIndex}.image`, product.image, true);
 });
 
 data.diy.forEach((diy, diyIndex) => {

@@ -44,6 +44,8 @@ windowObject.roseFarmCloudCallback({
     "siteConfig.ticket.full": 250,
     "diy.4.enabled": false,
     "diy.4.name": "新增 DIY",
+    "food.0.image": "https://example.com/food.jpg",
+    "diningContent.signatureTitle": "雲端招牌料理",
     "__proto__.polluted": true,
   },
   updatedAt: { "siteConfig.ticket.full": "2026-07-17T00:00:00.000Z" },
@@ -52,6 +54,8 @@ windowObject.roseFarmCloudCallback({
 assert.equal(windowObject.DATA.siteConfig.ticket.full, 250);
 assert.equal(windowObject.DATA.diy[4].enabled, false);
 assert.equal(windowObject.DATA.diy[4].name, "新增 DIY");
+assert.equal(windowObject.DATA.food[0].image, "https://example.com/food.jpg");
+assert.equal(windowObject.DATA.diningContent.signatureTitle, "雲端招牌料理");
 assert.equal({}.polluted, undefined);
 assert.equal(document.documentElement.dataset.cloudData, "loaded");
 

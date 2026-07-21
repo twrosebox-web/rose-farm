@@ -92,6 +92,20 @@ window.DATA = {
         { status: 'coming-soon', modal: 'modal-camping-teaser', title: '玫瑰星空露營', price: '籌備中', img: "https://i.meee.com.tw/oqSBjjN.webp", desc: "屏東平原的星空秘境。在玫瑰花香中入睡，即將實現。", tags: ['⛺ Coming Soon'] }
     ],
 
+    // ========== 餐廳主文案 ==========
+    diningContent: {
+        ticketNotice: "餐廳位於園區內，用餐需購買入園門票；全票 $200 折抵 $150，半票 $100 折抵 $50。",
+        signatureTitle: "招牌玫瑰白玉鍋",
+        signatureEnglish: "Rose Soy Milk Hot Pot",
+        signatureDescription1: "選用屏東在地鮮磨的濃郁豆漿作為基底，僅保留豆類最原始的清甜。",
+        signatureDescription2: "您可以親手將清晨現採的「大花玫瑰」花瓣撒入。遇熱瞬間釋放的清香與豆香融合，交織成奢華的療癒滋味。",
+        highlight1Title: "醇厚豆漿底",
+        highlight1Description: "高蛋白健康基底",
+        highlight2Title: "現採大花玫瑰",
+        highlight2Description: "當日鮮採自然農法玫瑰",
+        groupNotice: "※ 團體用餐與 Buffet 請務必提前來電預約。"
+    },
+
     // ========== 餐飲 ==========
     diningOptions: [
         { title: '自主單點', img: 'https://i.meee.com.tw/04BMMlF.webp', desc: '隨心挑選多道玫瑰創意料理，適合品味獨到的您。', price: '依菜單計價', type: 'basic' },

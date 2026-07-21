@@ -264,6 +264,7 @@ function publishBatchEditor_(spreadsheetOverride) {
     });
 
     validateDiyGroups_(contentRows);
+    validateImageUrls_(contentRows);
 
     if (changedCount) {
       contentSheet.getRange(BACKEND.dataStartRow, BACKEND.columns.value, contentRowCount, 1)
@@ -308,6 +309,24 @@ function validateDiyGroups_(contentRows) {
     }
     if (!/^https:\/\//i.test(String(group.image))) {
       throw new Error(`DIY 項目 ${index + 1} 的圖片網址必須以 https:// 開頭。`);
+    }
+  });
+}
+
+function isImageKey_(key) {
+  return /(?:^|\.)(?:image|img)$/.test(key)
+    || /\.images\.\d+$/.test(key)
+    || /^siteConfig\.diningImages\.\d+$/.test(key);
+}
+
+function validateImageUrls_(contentRows) {
+  contentRows.forEach((row) => {
+    const key = String(row[BACKEND.columns.key - 1] || '').trim();
+    if (!isImageKey_(key)) return;
+    const value = row[BACKEND.columns.value - 1];
+    if (isRawEmptyValue_(value)) return;
+    if (!/^https:\/\//i.test(String(value))) {
+      throw new Error(`圖片網址必須以 https:// 開頭：${key}`);
     }
   });
 }
@@ -371,6 +390,8 @@ function makeEditorLabel_(entry) {
       ? `❓ 題目內容 ${questionNumber}｜${category}`
       : `💬 答案內容 ${questionNumber}`;
   }
+  if (key.startsWith('diningContent.')) return entry.item;
+  if (isImageKey_(key)) return `${entry.item}｜圖片網址`;
 
   const field = key.split('.').pop();
   const names = {
@@ -378,7 +399,7 @@ function makeEditorLabel_(entry) {
     enabled: '是否顯示', text: '內容', full: '全票', fullDiscount: '全票折抵',
     half: '半票', halfDiscount: '半票折抵', freeRule: '免票規則', time: '營業時間',
     note: '補充說明', price: '價格', subPrice: '價格單位', name: '名稱',
-    tag: '時長', group: '成團人數', image: '圖片網址', title: '標題',
+    tag: '時長', group: '成團人數', image: '圖片網址', img: '圖片網址', title: '標題', desc: '描述',
     q: '問題', a: '答案',
   };
   return `${entry.item}｜${names[field] || field}`;
@@ -470,6 +491,7 @@ function updateRows_(updates) {
       rowByKey.get(entry.key).row[BACKEND.columns.value - 1] = entry.value;
     });
     validateDiyGroups_(rows);
+    validateImageUrls_(rows);
 
     const results = prepared.map((entry) => {
       const timestamp = new Date().toISOString();

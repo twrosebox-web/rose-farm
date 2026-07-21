@@ -118,10 +118,43 @@
         }
     }
 
+    function renderStaticImages() {
+        if (!window.DATA) return;
+        var index;
+        var images;
+
+        images = document.querySelectorAll('#render-hero-slider .hero-slide img');
+        (window.DATA.heroSlides || []).forEach(function(slide, slideIndex) {
+            if (images[slideIndex]) images[slideIndex].src = slide.image;
+        });
+
+        (window.DATA.features || []).forEach(function(feature, featureIndex) {
+            images = document.querySelectorAll('.feature-slide-' + featureIndex);
+            (feature.images || []).forEach(function(src, imageIndex) {
+                if (images[imageIndex]) images[imageIndex].src = src;
+            });
+        });
+
+        images = document.querySelectorAll('#render-seasons-grid > div > img');
+        (window.DATA.seasons || []).forEach(function(season, seasonIndex) {
+            if (images[seasonIndex]) images[seasonIndex].src = season.image;
+        });
+
+        images = document.querySelectorAll('#render-gallery-thumbs img');
+        (window.DATA.gallery || []).forEach(function(item, galleryIndex) {
+            if (images[galleryIndex]) images[galleryIndex].src = item.image;
+        });
+        index = Number(window.currentGalleryIndex || 0);
+        if (typeof window.upG === 'function') window.upG(index);
+    }
+
     window.renderAll = function() {
         return renderScripts.reduce(function(chain, src) {
             return chain.then(function() { return loadRenderScript(src); });
-        }, Promise.resolve()).then(renderSiteConfig);
+        }, Promise.resolve()).then(function() {
+            renderSiteConfig();
+            renderStaticImages();
+        });
     };
 
     function renderWhenSafe() {
