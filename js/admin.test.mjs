@@ -101,6 +101,11 @@ assert.match(css, /\.mobile-nav-hint/);
 assert.match(css, /env\(safe-area-inset-bottom/);
 assert.match(css, /\.toolbar \{ position: static/);
 assert.match(css, /max-height: calc\(100dvh - 36px\)/);
+assert.match(css, /\.faq-category-bar \{[^}]*flex-wrap: wrap/s);
+assert.match(css, /\.image-category-bar \{[^}]*flex-wrap: wrap/s);
+assert.match(css, /\.image-grid \{[^}]*repeat\(auto-fill, minmax\(220px, 280px\)\)/s);
+assert.match(css, /\.image-manager-card \{[^}]*max-width: 280px/s);
+assert.match(css, /body \{[^}]*overflow-x: clip/s);
 
 const adminSource = fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
 assert.match(adminSource, /aria-current="page"/);
