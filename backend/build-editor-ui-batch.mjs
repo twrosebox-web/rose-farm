@@ -147,7 +147,7 @@ const requests = [
         gridProperties: {
           rowCount: gridRows,
           columnCount: 8,
-          frozenRowCount: 5,
+          frozenRowCount: 0,
           hideGridlines: true,
         },
       },
