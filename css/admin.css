@@ -142,6 +142,7 @@ button { cursor: pointer; }
 .card-footer { display: flex; justify-content: space-between; align-items: center; padding: 13px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
 .danger-link { color: var(--danger); border: 0; background: transparent; font-weight: 800; }
 .add-card-button { min-height: 120px; border: 2px dashed #b8c8bb; border-radius: 20px; color: var(--forest); background: rgba(255,255,255,.46); font-weight: 800; }
+.add-card-button small { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; font-weight: 600; }
 .faq-card-header { align-items: flex-start; }
 .faq-category-wrap { position: sticky; top: 86px; z-index: 14; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,254,250,.96); box-shadow: 0 10px 30px rgba(34,54,41,.07); backdrop-filter: blur(14px); }
 .faq-category-heading { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin: 0 3px 10px; }
@@ -182,6 +183,7 @@ button { cursor: pointer; }
 .image-manager-preview img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .25s ease; }
 .image-manager-preview a:hover img { transform: scale(1.025); }
 .image-manager-preview.empty { display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+.image-manager-preview.invalid { padding: 18px; color: var(--danger); background: var(--rose-soft); text-align: center; line-height: 1.6; }
 .image-manager-body { display: grid; gap: 11px; padding: 18px; }
 .image-card-meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .image-card-meta span { padding: 4px 8px; border-radius: 7px; color: var(--forest); background: var(--forest-soft); font-size: 10px; font-weight: 800; }

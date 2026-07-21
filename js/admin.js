@@ -88,6 +88,10 @@
         if (/^products\./.test(key)) return '伴手禮商品卡片，第 ' + number + ' 張。';
         return '網站內容圖片；可從草稿預覽點圖確認實際位置。';
     }
+
+    function isSafeImageUrl(value) {
+        return /^https:\/\//i.test(String(value || '').trim());
+    }
     function normalizeValue(value, type) {
         if (type === 'boolean') return value === true || value === 'true' || value === 'TRUE';
         if (type === 'number') {
@@ -280,7 +284,7 @@
         if (isImageKey(key)) {
             var image = String(value || '');
             return '<div class="image-field"><div class="image-preview" data-preview-for="' + escapeAttr(key) + '">' +
-                (image ? '<img src="' + escapeAttr(image) + '" alt="圖片預覽" loading="lazy">' : '<span>尚未設定圖片</span>') +
+                (isSafeImageUrl(image) ? '<img src="' + escapeAttr(image) + '" alt="圖片預覽" loading="lazy">' : '<span>' + (image ? '圖片網址格式錯誤' : '尚未設定圖片') + '</span>') +
                 '</div><div><input type="url" data-key="' + escapeAttr(key) + '" data-type="string" value="' + escapeAttr(image) + '" placeholder="https://..."' + required + className + '>' +
                 '<p class="field-help">' + escapeHtml(entry.guidance || '貼上 https:// 開頭的圖片網址，左側縮圖會立即更新。') + '</p></div></div>';
         }
@@ -334,8 +338,10 @@
             var enabled = getEntry(items, prefix + 'enabled');
             var name = getEntry(items, prefix + 'name');
             var isEnabled = enabled ? !!state.current[enabled.key] : true;
+            var isChanged = items.some(function (entry) { return state.dirty.has(entry.key); });
+            var hasBrandWarning = items.some(function (entry) { return containsBrandTerm(state.current[entry.key]); });
             var title = name && state.current[name.key] ? state.current[name.key] : '尚未使用的 DIY 欄位';
-            html += '<article class="diy-card' + (isEnabled ? '' : ' disabled-card') + '" data-diy-index="' + index + '">' +
+            html += '<article class="diy-card' + (isEnabled ? '' : ' disabled-card') + (isChanged ? ' changed' : '') + (hasBrandWarning ? ' brand-warning' : '') + '" data-diy-index="' + index + '">' +
                 '<header class="diy-card-header"><div><small>DIY ' + (Number(index) + 1) + '</small><h4>' + escapeHtml(title) + '</h4></div>' + (enabled ? fieldControl(enabled, true) : '') + '</header>' +
                 '<div class="diy-card-body">' + compactField(name, '體驗名稱') +
                 '<div class="two-column-fields">' + compactField(getEntry(items, prefix + 'price'), '價格') + compactField(getEntry(items, prefix + 'tag'), '所需時間') + '</div>' +
@@ -343,7 +349,7 @@
                 '<footer class="card-footer"><span>' + (isEnabled ? '目前會顯示在網站' : '目前不會顯示') + '</span>' +
                 (enabled && isEnabled ? '<button class="danger-link" type="button" data-disable-diy="' + index + '">下架此項目</button>' : '') + '</footer></article>';
         });
-        html += '<button class="add-card-button" id="add-diy-button" type="button">＋ 新增一個 DIY 項目</button></div>';
+        html += '<button class="add-card-button" id="add-diy-button" type="button">＋ 新增一個 DIY 項目<small>目前最多可顯示 8 項</small></button></div>';
         return html;
     }
 
@@ -374,7 +380,7 @@
     }
 
     function renderFaqCategoryBar() {
-        var active = state.query ? 'all' : state.faqCategory;
+        var active = state.query || state.dirtyOnly ? 'all' : state.faqCategory;
         return '<div class="faq-category-wrap"><div class="faq-category-heading"><strong>先選問題分類</strong><span>' +
             (state.query ? '搜尋時會比對所有分類' : '一次只看一類，比較好找') + '</span></div><div class="faq-category-bar">' +
             faqCategoryOptions().map(function (option) {
@@ -411,6 +417,8 @@
             var categoryEntry = state.entryByKey.get('qa.categories.' + categoryIndex + '.name');
             var categoryName = categoryEntry ? state.current[categoryEntry.key] : (q ? q.item.split('／')[0] : '常見問題');
             var title = q ? state.current[q.key] : '表格型答案';
+            var isChanged = items.some(function (entry) { return state.dirty.has(entry.key); });
+            var hasBrandWarning = items.some(function (entry) { return containsBrandTerm(state.current[entry.key]); });
             var rowEntries = items.filter(function (entry) { return new RegExp('^' + prefix.replace(/\./g, '\\.') + '\\.rows\\.\\d+\\.').test(entry.key); });
             var tableRows = groupEntries(rowEntries, function (entry) { var rowMatch = entry.key.match(/\.rows\.(\d+)\./); return rowMatch ? rowMatch[1] : '0'; });
             var answerHtml = '';
@@ -425,7 +433,7 @@
                 });
                 answerHtml += '</div></div>';
             }
-            html += '<article class="faq-card"><header class="faq-card-header"><span class="faq-number">' + (questionIndex + 1) + '</span>' +
+            html += '<article class="faq-card' + (isChanged ? ' changed' : '') + (hasBrandWarning ? ' brand-warning' : '') + '" data-faq-prefix="' + escapeAttr(prefix) + '"><header class="faq-card-header"><span class="faq-number">' + (questionIndex + 1) + '</span>' +
                 '<div class="faq-title-wrap"><small>' + escapeHtml(categoryName) + '</small><h4>' + escapeHtml(title || '尚未填寫題目') + '</h4></div></header>' +
                 '<div class="faq-card-body">' + (q ? '<div class="faq-question-field">' + compactField(q, '❓ 問題') + '</div>' : '') +
                 answerHtml + '</div></article>';
@@ -452,7 +460,7 @@
     }
 
     function renderImageCategoryBar() {
-        var active = state.query ? 'all' : state.imageCategory;
+        var active = state.query || state.dirtyOnly ? 'all' : state.imageCategory;
         return '<div class="image-category-wrap"><div class="image-category-heading"><div><strong>先選圖片出現的位置</strong><span>每張卡片都有實際縮圖與網站位置提示</span></div>' +
             '<span class="image-preview-legend">🖼️ 換網址後，預覽會立即更新</span></div><div class="image-category-bar">' +
             imageCategoryOptions().map(function (option) {
@@ -476,6 +484,7 @@
 
     function renderImagePreview(value, key) {
         if (!value) return '<div class="image-manager-preview empty" data-preview-for="' + escapeAttr(key) + '"><span>尚未設定圖片</span></div>';
+        if (!isSafeImageUrl(value)) return '<div class="image-manager-preview empty invalid" data-preview-for="' + escapeAttr(key) + '"><span>⚠ 圖片網址必須以 https:// 開頭</span></div>';
         return '<div class="image-manager-preview" data-preview-for="' + escapeAttr(key) + '"><a href="' + escapeAttr(value) + '" target="_blank" rel="noopener noreferrer" title="開啟原圖">' +
             '<img src="' + escapeAttr(value) + '" alt="' + escapeAttr(imageLocationHint(key)) + '" loading="lazy"></a></div>';
     }
@@ -529,6 +538,15 @@
         byId('show-dirty-button').classList.toggle('active', state.dirtyOnly);
     }
 
+    function relatedEntriesForKey(key) {
+        var diyMatch = key.match(/^(diy\.\d+)\./);
+        if (diyMatch) return state.entries.filter(function (entry) { return entry.key.indexOf(diyMatch[1] + '.') === 0; });
+        var faqMatch = key.match(/^(qa\.categories\.\d+\.list\.\d+)/);
+        if (faqMatch) return state.entries.filter(function (entry) { return entry.key.indexOf(faqMatch[1] + '.') === 0; });
+        var single = state.entryByKey.get(key);
+        return single ? [single] : [];
+    }
+
     function updateValue(key, rawValue) {
         var entry = state.entryByKey.get(key);
         if (!entry) return;
@@ -540,8 +558,9 @@
         var card = document.querySelector('[data-field-key="' + cssEscape(key) + '"]');
         if (card) {
             var targetCard = card.closest('.field-card, .diy-card, .faq-card, .image-manager-card') || card;
-            targetCard.classList.toggle('changed', state.dirty.has(key));
-            targetCard.classList.toggle('brand-warning', containsBrandTerm(value));
+            var related = relatedEntriesForKey(key);
+            targetCard.classList.toggle('changed', related.some(function (candidate) { return state.dirty.has(candidate.key); }));
+            targetCard.classList.toggle('brand-warning', related.some(function (candidate) { return containsBrandTerm(state.current[candidate.key]); }));
         }
         updateLiveDetails(key, value);
     }
@@ -554,14 +573,21 @@
     function updateLiveDetails(key, value) {
         var preview = document.querySelector('[data-preview-for="' + cssEscape(key) + '"]');
         if (preview) {
-            preview.classList.toggle('empty', !value);
-            preview.innerHTML = value
+            var safeImage = isSafeImageUrl(value);
+            preview.classList.toggle('empty', !safeImage);
+            preview.classList.toggle('invalid', !!value && !safeImage);
+            preview.innerHTML = safeImage
                 ? (preview.classList.contains('image-manager-preview')
                     ? '<a href="' + escapeAttr(value) + '" target="_blank" rel="noopener noreferrer" title="開啟原圖"><img src="' + escapeAttr(value) + '" alt="圖片預覽" loading="lazy"></a>'
                     : '<img src="' + escapeAttr(value) + '" alt="圖片預覽" loading="lazy">')
-                : '<span>尚未設定圖片</span>';
+                : '<span>' + (value ? '⚠ 圖片網址必須以 https:// 開頭' : '尚未設定圖片') + '</span>';
         }
         var field = document.querySelector('[data-key="' + cssEscape(key) + '"]');
+        if (field && field.type === 'checkbox') {
+            var switchText = field.closest('.switch-row');
+            var statusText = switchText && switchText.querySelector('strong');
+            if (statusText) statusText.textContent = value ? '目前顯示' : '目前隱藏';
+        }
         var card = field && (field.closest('.field-card, .compact-field'));
         if (card) {
             var oldWarning = card.querySelector('.field-warning');
@@ -577,8 +603,24 @@
 
     function addDiy() {
         var enabledEntries = state.entries.filter(function (entry) { return /^diy\.\d+\.enabled$/.test(entry.key); });
-        var available = enabledEntries.find(function (entry) { return !state.current[entry.key]; });
-        if (!available) { showToast('目前預留的 DIY 欄位已全部使用，請先下架一項或新增欄位。', true); return; }
+        var disabled = enabledEntries.filter(function (entry) { return !state.current[entry.key]; });
+        if (!disabled.length) { showToast('目前 8 個 DIY 欄位已全部使用，請先下架一項。', true); return; }
+        var fields = ['name', 'price', 'tag', 'group', 'image'];
+        var available = disabled.find(function (entry) {
+            var prefix = entry.key.replace(/enabled$/, '');
+            return fields.every(function (field) { return !String(state.current[prefix + field] || '').trim(); });
+        });
+        if (!available) {
+            available = disabled[0];
+            openConfirm({ icon: '🧹', title: '建立新的空白 DIY？', message: '預留欄位中只有已下架的舊項目。繼續會清除其中一項舊內容，再建立空白 DIY。', confirmLabel: '清除並新增', onConfirm: function () { activateBlankDiy(available, true); } });
+            return;
+        }
+        activateBlankDiy(available, false);
+    }
+
+    function activateBlankDiy(available, clearOldContent) {
+        var prefix = available.key.replace(/enabled$/, '');
+        if (clearOldContent) ['name', 'price', 'tag', 'group', 'image'].forEach(function (field) { updateValue(prefix + field, ''); });
         updateValue(available.key, true);
         renderContent();
         var index = available.key.match(/^diy\.(\d+)/)[1];
@@ -637,7 +679,7 @@
             showToast(state.demo ? '展示模式：草稿只暫存在這個頁面，尚未寫入 Sheet。' : '草稿已儲存，共 ' + payload.savedCount + ' 項；正式網站尚未改變。');
             return true;
         }).catch(function (error) { showToast(error.message, true); return false; })
-            .finally(function () { setBusy(byId('save-button'), false, '儲存草稿'); });
+            .finally(function () { setBusy(byId('save-button'), false, '儲存草稿'); updateSummary(); });
     }
 
     function discardChanges() {
@@ -712,6 +754,7 @@
         var badge = byId('connection-badge');
         badge.className = 'status-badge ' + (state.demo ? 'demo' : 'connected');
         badge.textContent = state.demo ? '展示模式｜未連接' : '● 已連接 Sheet';
+        activateDeepLinkContext();
         renderContent();
     }
 
@@ -733,16 +776,46 @@
             .finally(function () { setBusy(byId('login-button'), false, '登入管理中心'); });
     }
 
-    function logout() {
+    function performLogout() {
         state.passcode = ''; state.connected = false; state.demo = false; state.entries = []; state.dirty.clear();
+        deepLinkUsed = false;
         byId('admin-passcode').value = ''; byId('admin-app').classList.add('hidden'); byId('admin-login').classList.remove('hidden');
     }
 
+    function logout() {
+        if (!state.dirty.size) { performLogout(); return; }
+        openConfirm({ icon: '⚠️', title: '尚有未儲存的修改', message: '現在登出會放棄本次尚未儲存的內容。確定要登出嗎？', confirmLabel: '放棄修改並登出', onConfirm: performLogout });
+    }
+
     var deepLinkUsed = false;
+    function deepLinkField() {
+        return new URLSearchParams(window.location.search).get('field');
+    }
+
+    function activateDeepLinkContext() {
+        if (deepLinkUsed) return;
+        var field = deepLinkField();
+        if (!field) return;
+        var entry = state.entryByKey.get(field);
+        if (!entry) {
+            deepLinkUsed = true;
+            setTimeout(function () { showToast('找不到這個後台欄位，可能已停用或更名。', true); }, 80);
+            return;
+        }
+        if (isImageKey(field)) {
+            state.activeSection = 'images';
+            state.imageCategory = imageCategoryForKey(field);
+        } else {
+            state.activeSection = categoryForEntry(entry);
+            if (state.activeSection === 'faq') state.faqCategory = faqCategoryIndex(entry) || 'all';
+        }
+        state.query = '';
+        state.dirtyOnly = false;
+    }
+
     function focusDeepLink() {
         if (deepLinkUsed) return;
-        var params = new URLSearchParams(window.location.search);
-        var field = params.get('field');
+        var field = deepLinkField();
         if (!field) return;
         var target = document.querySelector('[data-field-key="' + cssEscape(field) + '"]');
         if (!target) return;
@@ -825,6 +898,7 @@
         isImageKey: isImageKey, categoryForEntry: categoryForEntry, valuesEqual: valuesEqual,
         containsBrandTerm: containsBrandTerm, allowedDemoKey: allowedDemoKey, buildDemoEntries: buildDemoEntries,
         faqCategoryIndex: faqCategoryIndex, imageCategoryForKey: imageCategoryForKey, imageLocationHint: imageLocationHint,
+        isSafeImageUrl: isSafeImageUrl,
         filterEntries: function (entries, category, query, dirtyOnly, dirtyKeys, currentValues) {
             var oldCurrent = state.current; state.current = currentValues || {};
             var result = filterEntries(entries, category, query, dirtyOnly, dirtyKeys || new Set());

@@ -50,6 +50,9 @@ assert.equal(api.imageCategoryForKey('products.1.image'), 'products');
 assert.match(api.imageLocationHint('heroSlides.2.image'), /第 3 張/);
 assert.match(api.imageLocationHint('siteConfig.diningImages.3'), /白玉鍋/);
 assert.match(api.imageLocationHint('features.1.images.4'), /第 2 區，第 5 張/);
+assert.equal(api.isSafeImageUrl('https://example.com/photo.jpg'), true);
+assert.equal(api.isSafeImageUrl('javascript:alert(1)'), false);
+assert.equal(api.isSafeImageUrl('http://example.com/photo.jpg'), false);
 
 const entries = api.buildDemoEntries(context.window.DATA);
 assert.ok(entries.length > 150, `expected many editable fields, got ${entries.length}`);
