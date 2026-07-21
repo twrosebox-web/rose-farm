@@ -13,6 +13,8 @@ const sheetRows = [
   ["DIY", "DIY 項目 5", "diy.4.tag", "", "string", "否", "", "2026-07-17T00:00:00.000Z", true],
   ["DIY", "DIY 項目 5", "diy.4.group", "", "string", "否", "", "2026-07-17T00:00:00.000Z", true],
   ["DIY", "DIY 項目 5", "diy.4.image", "", "string", "否", "", "2026-07-17T00:00:00.000Z", true],
+  ["餐廳｜招牌料理", "門票折抵提示", "diningContent.ticketNotice", "正式門票提示", "string", "是", "餐廳提示", "2026-07-17T00:00:00.000Z", true],
+  ["餐廳｜招牌料理", "招牌料理名稱", "diningContent.signatureTitle", "正式招牌料理", "string", "是", "料理名稱", "2026-07-17T00:00:00.000Z", true],
 ];
 
 const cacheStore = new Map();
@@ -44,15 +46,30 @@ const editorRows = [
   ["招牌料理名稱", "草稿招牌料理", "diningContent.signatureTitle", 30, "string", "是", true],
   ["未啟用內容", "不應出現", "siteConfig.announcement.text", 8, "string", "否", false],
 ];
+let editorStatus = "";
 const editorSheet = {
   getLastRow: () => editorRows.length + 6,
   getSheetId: () => 2026072101,
   getRange(row, column, rowCount = 1, columnCount = 1) {
     return {
       getValues() {
+        if (row < 7) return Array.from({ length: rowCount }, () => Array(columnCount).fill(""));
         return editorRows.slice(row - 7, row - 7 + rowCount).map((source) =>
           source.slice(column - 1, column - 1 + columnCount),
         );
+      },
+      setValues(values) {
+        values.forEach((source, rowOffset) => {
+          source.forEach((value, columnOffset) => {
+            editorRows[row - 7 + rowOffset][column - 1 + columnOffset] = value;
+          });
+        });
+        return this;
+      },
+      setValue(value) {
+        if (row === "B3" || (row === 3 && column === 2)) editorStatus = value;
+        else if (row >= 7) editorRows[row - 7][column - 1] = value;
+        return this;
       },
     };
   },
@@ -209,6 +226,43 @@ assert.match(draftResult.text, /"diningContent.signatureTitle":"草稿招牌料�
 assert.match(draftResult.text, /"editorRows":\{"diningContent.ticketNotice":7,"diningContent.signatureTitle":8\}/);
 assert.match(draftResult.text, /"editorSheetId":2026072101/);
 assert.doesNotMatch(draftResult.text, /不應出現/);
+
+const adminLoad = context.doPost({
+  postData: { contents: JSON.stringify({ action: "admin_load", passcode: "secret" }) },
+});
+const adminPayload = JSON.parse(adminLoad.text);
+assert.equal(adminPayload.ok, true);
+assert.equal(
+  adminPayload.entries.find((entry) => entry.key === "diningContent.signatureTitle").draftValue,
+  "草稿招牌料理",
+);
+assert.equal(adminPayload.entries.find((entry) => entry.key === "siteConfig.ticket.full").type, "number");
+
+const adminDraftSave = context.doPost({
+  postData: {
+    contents: JSON.stringify({
+      action: "draft_save",
+      passcode: "secret",
+      updates: [{ key: "diningContent.signatureTitle", value: "新招牌料理" }],
+    }),
+  },
+});
+assert.equal(JSON.parse(adminDraftSave.text).ok, true);
+assert.equal(editorRows[1][1], "新招牌料理");
+assert.equal(sheetRows.at(-1)[3], "正式招牌料理");
+assert.match(editorStatus, /尚未發布/);
+
+const brandDraftSave = context.doPost({
+  postData: {
+    contents: JSON.stringify({
+      action: "draft_save",
+      passcode: "secret",
+      updates: [{ key: "diningContent.signatureTitle", value: "Organic 招牌料理" }],
+    }),
+  },
+});
+assert.equal(JSON.parse(brandDraftSave.text).ok, false);
+assert.match(JSON.parse(brandDraftSave.text).error, /BRAND_CONFIRM_REQUIRED/);
 
 const expiredDraftResult = context.doGet({
   parameter: { callback: "roseFarmCloudCallback", mode: "draft", token: "expired-token" },

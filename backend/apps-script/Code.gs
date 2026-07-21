@@ -163,11 +163,162 @@ function doPost(e) {
   try {
     const payload = parsePostBody_(e);
     assertPasscode_(payload.passcode);
+    const action = String(payload.action || '').trim().toLowerCase();
+    if (action === 'admin_load') {
+      return jsonOutput_({ ok: true, ...buildAdminPayload_() });
+    }
+    if (action === 'draft_save') {
+      const updates = normalizeUpdates_(payload);
+      return jsonOutput_({
+        ok: true,
+        ...saveAdminDraft_(updates, payload.brandConfirmed === true),
+      });
+    }
+    if (action === 'preview_url') {
+      return jsonOutput_({ ok: true, url: createDraftPreviewUrl_(), expiresIn: PREVIEW.tokenSeconds });
+    }
+    if (action === 'publish_draft') {
+      return jsonOutput_({
+        ok: true,
+        ...publishBatchEditor_(null, true, payload.brandConfirmed === true),
+      });
+    }
     const updates = normalizeUpdates_(payload);
     const result = updateRows_(updates);
     return jsonOutput_({ ok: true, updated: result });
   } catch (error) {
     return jsonOutput_({ ok: false, error: safeErrorMessage_(error) });
+  }
+}
+
+/**
+ * admin.html 登入後載入：正式值、批次編輯草稿值與欄位說明。
+ */
+function buildAdminPayload_(spreadsheetOverride) {
+  const spreadsheet = spreadsheetOverride || getBackendSpreadsheet_();
+  if (!spreadsheet) throw new Error('找不到後台試算表。');
+  const entries = getContentRows_(spreadsheet);
+  const draftByKey = getEditorDraftByKey_(spreadsheet);
+  return {
+    entries: entries.map((entry) => ({
+      section: entry.section,
+      item: entry.item,
+      key: entry.key,
+      label: entry.editorLabel,
+      value: entry.value,
+      draftValue: draftByKey.has(entry.key) ? draftByKey.get(entry.key).value : entry.value,
+      type: entry.type,
+      required: entry.required,
+      guidance: entry.guidance,
+      updatedAt: entry.updatedAt,
+      editorRow: draftByKey.has(entry.key) ? draftByKey.get(entry.key).row : null,
+    })),
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function getEditorDraftByKey_(spreadsheet) {
+  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
+  if (!editor) throw new Error(`找不到「${EDITOR.sheetName}」分頁。`);
+  const lastRow = editor.getLastRow();
+  const result = new Map();
+  if (lastRow < EDITOR.dataStartRow) return result;
+  const rowCount = lastRow - EDITOR.dataStartRow + 1;
+  const rows = editor.getRange(
+    EDITOR.dataStartRow,
+    EDITOR.columns.value,
+    rowCount,
+    EDITOR.columns.active - EDITOR.columns.value + 1,
+  ).getValues();
+  rows.forEach((row, index) => {
+    const key = String(row[EDITOR.columns.key - EDITOR.columns.value] || '').trim();
+    const active = row[EDITOR.columns.active - EDITOR.columns.value] === true;
+    if (!key || !active) return;
+    result.set(key, {
+      value: row[EDITOR.columns.value - EDITOR.columns.value],
+      row: EDITOR.dataStartRow + index,
+    });
+  });
+  return result;
+}
+
+/**
+ * admin.html 的「儲存草稿」：只寫批次編輯 B 欄，不發布正式內容。
+ */
+function saveAdminDraft_(updates, brandConfirmed, spreadsheetOverride) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const spreadsheet = spreadsheetOverride || getBackendSpreadsheet_();
+    if (!spreadsheet) throw new Error('找不到後台試算表。');
+    const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
+    if (!editor) throw new Error(`找不到「${EDITOR.sheetName}」分頁。`);
+    const contentSheet = getContentSheet_(spreadsheet);
+    const contentRowCount = contentSheet.getLastRow() - BACKEND.dataStartRow + 1;
+    if (contentRowCount < 1) throw new Error('內容資料沒有可更新的欄位。');
+    const contentRows = contentSheet
+      .getRange(BACKEND.dataStartRow, 1, contentRowCount, BACKEND.columns.active)
+      .getValues();
+    const contentByKey = new Map();
+    contentRows.forEach((row) => {
+      const key = String(row[BACKEND.columns.key - 1] || '').trim();
+      if (key) contentByKey.set(key, row);
+    });
+
+    const editorRowCount = editor.getLastRow() - EDITOR.dataStartRow + 1;
+    if (editorRowCount < 1) throw new Error('批次編輯頁沒有欄位。');
+    const editorRows = editor.getRange(
+      EDITOR.dataStartRow,
+      EDITOR.columns.value,
+      editorRowCount,
+      EDITOR.columns.active - EDITOR.columns.value + 1,
+    ).getValues();
+    const editorIndexByKey = new Map();
+    editorRows.forEach((row, index) => {
+      const key = String(row[EDITOR.columns.key - EDITOR.columns.value] || '').trim();
+      const active = row[EDITOR.columns.active - EDITOR.columns.value] === true;
+      if (key && active) editorIndexByKey.set(key, index);
+      const contentRow = contentByKey.get(key);
+      if (contentRow) contentRow[BACKEND.columns.value - 1] = row[0];
+    });
+
+    const prepared = updates.map((update) => {
+      const key = String(update.key || '').trim();
+      if (!isValidKey_(key)) throw new Error(`key 格式不合法：${key}`);
+      const contentRow = contentByKey.get(key);
+      const editorIndex = editorIndexByKey.get(key);
+      if (!contentRow || editorIndex == null) throw new Error(`找不到可編輯欄位：${key}`);
+      const type = String(contentRow[BACKEND.columns.type - 1] || 'string');
+      const required = String(contentRow[BACKEND.columns.required - 1] || '') === '是';
+      if (required && isRawEmptyValue_(update.value)) throw new Error(`必填欄位不可留空：${key}`);
+      const value = coerceValue_(update.value, type);
+      if (/有機|organic/i.test(String(value || '')) && !brandConfirmed) {
+        throw new Error(`BRAND_CONFIRM_REQUIRED：內容包含「有機／Organic」，請確認已由 Shao 核決：${key}`);
+      }
+      if (isImageKey_(key) && !isRawEmptyValue_(value) && !/^https:\/\//i.test(String(value))) {
+        throw new Error(`圖片網址必須以 https:// 開頭：${key}`);
+      }
+      return { key, value, editorIndex };
+    });
+
+    prepared.forEach((entry) => {
+      editorRows[entry.editorIndex][0] = entry.value;
+      contentByKey.get(entry.key)[BACKEND.columns.value - 1] = entry.value;
+    });
+    validateDiyGroups_(contentRows);
+    validateImageUrls_(contentRows);
+
+    editor.getRange(EDITOR.dataStartRow, EDITOR.columns.value, editorRowCount, 1)
+      .setValues(editorRows.map((row) => [row[0]]));
+    editor.getRange(EDITOR.statusCell).setValue(`已儲存 ${prepared.length} 項草稿，尚未發布`);
+    SpreadsheetApp.flush();
+    return {
+      savedCount: prepared.length,
+      savedAt: new Date().toISOString(),
+      keys: prepared.map((entry) => entry.key),
+    };
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -315,7 +466,7 @@ function updateDraftPreviewLinks_(spreadsheet) {
   if (control) control.getRange('A20').setFormula(formula);
 }
 
-function publishBatchEditor_(spreadsheetOverride) {
+function publishBatchEditor_(spreadsheetOverride, throwOnError, brandConfirmed) {
   let editor = null;
   let publishRange = null;
   const lock = LockService.getScriptLock();
@@ -371,7 +522,7 @@ function publishBatchEditor_(spreadsheetOverride) {
       const value = coerceValue_(rawValue, type);
       const currentValue = contentRow[BACKEND.columns.value - 1];
       if (valuesEqual_(value, currentValue)) return;
-      if (/有機|organic/i.test(String(value || ''))) {
+      if (/有機|organic/i.test(String(value || '')) && !brandConfirmed) {
         throw new Error(`內容包含「有機／Organic」，請先交由 Shao 核決：${key}`);
       }
       contentRow[BACKEND.columns.value - 1] = value;
@@ -391,10 +542,13 @@ function publishBatchEditor_(spreadsheetOverride) {
       SpreadsheetApp.flush();
       CacheService.getScriptCache().remove(BACKEND.cacheKey);
     }
-    editor.getRange(EDITOR.statusCell)
-      .setValue(changedCount ? `已儲存 ${changedCount} 項到 Sheet ✓` : '沒有需要儲存的變更');
+    const message = changedCount ? `已發布 ${changedCount} 項到正式內容 ✓` : '沒有需要發布的變更';
+    editor.getRange(EDITOR.statusCell).setValue(message);
+    return { publishedCount: changedCount, message, publishedAt: new Date().toISOString() };
   } catch (error) {
     if (editor) editor.getRange(EDITOR.statusCell).setValue(safeErrorMessage_(error));
+    if (throwOnError) throw error;
+    return { publishedCount: 0, message: safeErrorMessage_(error), error: true };
   } finally {
     if (publishRange) publishRange.setValue(false);
     if (locked) lock.releaseLock();
@@ -471,6 +625,8 @@ function getContentRows_(spreadsheetOverride) {
       item: String(row[BACKEND.columns.item - 1] || '').trim(),
       key: String(row[BACKEND.columns.key - 1] || '').trim(),
       value: row[BACKEND.columns.value - 1],
+      type: String(row[BACKEND.columns.type - 1] || 'string'),
+      required: String(row[BACKEND.columns.required - 1] || '') === '是',
       guidance: String(row[BACKEND.columns.guidance - 1] || ''),
       updatedAt: normalizeTimestamp_(row[BACKEND.columns.updatedAt - 1]),
       active: row[BACKEND.columns.active - 1] === true,
@@ -652,7 +808,7 @@ function normalizeUpdates_(payload) {
     ? payload.updates
     : [{ key: payload.key, value: payload.value }];
   if (!raw.length) throw new Error('沒有可更新的欄位。');
-  if (raw.length > 50) throw new Error('單次最多更新 50 個欄位。');
+  if (raw.length > 300) throw new Error('單次最多更新 300 個欄位。');
   return raw;
 }
 
