@@ -4,6 +4,9 @@
 (function() {
     var config = window.CLOUD_CONFIG || {};
     var endpoint = String(config.endpoint || '').trim();
+    var previewMode = !!(window.location && /(?:^|[?&])preview=draft(?:&|$)/.test(window.location.search || ''));
+    var previewTokenMatch = window.location && String(window.location.search || '').match(/(?:^|[?&])token=([^&]+)/);
+    var previewToken = previewTokenMatch ? decodeURIComponent(previewTokenMatch[1]) : '';
     var pendingRender = false;
     var requestFinished = false;
     var timeoutId = null;
@@ -16,6 +19,19 @@
         'js/products-diy.js',
         'js/info-faq.js'
     ];
+
+    function setPreviewStatus(message, isError) {
+        if (!previewMode) return;
+        var banner = document.getElementById('draft-preview-banner');
+        var status = document.getElementById('draft-preview-status');
+        if (banner) banner.classList.remove('hidden');
+        if (status) {
+            status.textContent = message;
+            status.classList.toggle('text-red-200', !!isError);
+        }
+    }
+
+    setPreviewStatus('正在載入尚未發布的修改……', false);
 
     function setByPath(root, path, value) {
         var parts = String(path || '').split('.');
@@ -187,6 +203,7 @@
 
         if (!payload || payload.ok !== true || !payload.values || !window.DATA) {
             document.documentElement.dataset.cloudData = 'fallback';
+            setPreviewStatus('草稿載入失敗，目前顯示正式內容。', true);
             return;
         }
 
@@ -198,22 +215,29 @@
             generatedAt: payload.generatedAt || ''
         };
         document.documentElement.dataset.cloudData = 'loaded';
+        document.documentElement.dataset.contentMode = payload.mode === 'draft' ? 'draft' : 'published';
+        setPreviewStatus(payload.mode === 'draft' ? '目前顯示尚未發布的修改。' : '目前顯示正式內容。', payload.mode !== 'draft');
         renderWhenSafe();
     };
 
     if (!endpoint) {
         document.documentElement.dataset.cloudData = 'disabled';
+        setPreviewStatus('尚未連接後台，無法載入草稿。', true);
         return;
     }
 
     jsonpScript = document.createElement('script');
     jsonpScript.src = endpoint
         + (endpoint.indexOf('?') === -1 ? '?' : '&')
-        + 'callback=roseFarmCloudCallback&_=' + Date.now();
+        + 'callback=roseFarmCloudCallback'
+        + (previewMode ? '&mode=draft' : '')
+        + (previewMode && previewToken ? '&token=' + encodeURIComponent(previewToken) : '')
+        + '&_=' + Date.now();
     jsonpScript.onerror = function() {
         if (requestFinished) return;
         requestFinished = true;
         document.documentElement.dataset.cloudData = 'fallback';
+        setPreviewStatus('草稿載入失敗，目前顯示正式內容。', true);
         jsonpScript.remove();
     };
     document.head.appendChild(jsonpScript);
@@ -222,6 +246,7 @@
         if (requestFinished) return;
         requestFinished = true;
         document.documentElement.dataset.cloudData = 'fallback';
+        setPreviewStatus('草稿載入逾時，目前顯示正式內容。', true);
         if (jsonpScript) jsonpScript.remove();
     }, 8000);
 })();

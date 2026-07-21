@@ -39,6 +39,31 @@ const sheet = {
   getRange: makeRange,
 };
 
+const editorRows = [
+  ["門票折抵提示", "草稿門票提示", "diningContent.ticketNotice", 29, "string", "是", true],
+  ["招牌料理名稱", "草稿招牌料理", "diningContent.signatureTitle", 30, "string", "是", true],
+  ["未啟用內容", "不應出現", "siteConfig.announcement.text", 8, "string", "否", false],
+];
+const editorSheet = {
+  getLastRow: () => editorRows.length + 6,
+  getRange(row, column, rowCount = 1, columnCount = 1) {
+    return {
+      getValues() {
+        return editorRows.slice(row - 7, row - 7 + rowCount).map((source) =>
+          source.slice(column - 1, column - 1 + columnCount),
+        );
+      },
+    };
+  },
+};
+const spreadsheet = {
+  getSheetByName(name) {
+    if (name === "內容資料") return sheet;
+    if (name === "批次編輯") return editorSheet;
+    return null;
+  },
+};
+
 const scriptProperties = new Map([
   ["SPREADSHEET_ID", "test-sheet-id"],
   ["ADMIN_PASSCODE", "secret"],
@@ -70,6 +95,16 @@ const context = {
       },
     }),
   },
+  HtmlService: {
+    createHtmlOutput: (html) => ({
+      html,
+      title: "",
+      setTitle(title) {
+        this.title = title;
+        return this;
+      },
+    }),
+  },
   LockService: {
     getScriptLock: () => ({ waitLock() {}, releaseLock() {} }),
   },
@@ -80,10 +115,11 @@ const context = {
     }),
   },
   SpreadsheetApp: {
-    openById: () => ({ getSheetByName: () => sheet }),
+    openById: () => spreadsheet,
     getActiveSpreadsheet: () => null,
     flush() {},
   },
+  Utilities: { getUuid: () => "preview-uuid" },
 };
 
 vm.createContext(context);
@@ -162,6 +198,23 @@ const getResult = context.doGet({ parameter: { callback: "roseFarmCloudCallback"
 assert.equal(getResult.mimeType, "js");
 assert.match(getResult.text, /^roseFarmCloudCallback\(/);
 assert.match(getResult.text, /"siteConfig.ticket.full":250/);
+
+cacheStore.set("rose-farm-draft-preview-test-token", "1");
+const draftResult = context.doGet({
+  parameter: { callback: "roseFarmCloudCallback", mode: "draft", token: "test-token" },
+});
+assert.match(draftResult.text, /"mode":"draft"/);
+assert.match(draftResult.text, /"diningContent.signatureTitle":"草稿招牌料理"/);
+assert.doesNotMatch(draftResult.text, /不應出現/);
+
+const expiredDraftResult = context.doGet({
+  parameter: { callback: "roseFarmCloudCallback", mode: "draft", token: "expired-token" },
+});
+assert.match(expiredDraftResult.text, /已失效/);
+
+const previewRedirect = context.doGet({ parameter: { action: "preview" } });
+assert.match(previewRedirect.html, /preview=draft&amp;token=preview-uuid|preview=draft&token=preview-uuid/);
+assert.equal(cacheStore.get("rose-farm-draft-preview-preview-uuid"), "1");
 
 const invalidPost = context.doPost({
   postData: {

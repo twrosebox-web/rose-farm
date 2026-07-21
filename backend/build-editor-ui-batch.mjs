@@ -231,8 +231,7 @@ sections.forEach((entries, section) => {
 });
 
 outputRows[5] = [
-  formulaCell(`=HYPERLINK("#gid=${editorId}&range=A"&(MATCH("DIY",A7:A,0)+7),"↓ 跳到 DIY 第一項")`),
-  formulaCell(`=HYPERLINK("#gid=${editorId}&range=B"&(MATCH("FAQ*",A7:A,0)+7),"↓ 跳到 FAQ 第一題")`),
+  cellData('👁 預覽：請使用上方「🌹 內容後台」選單', '更新 Apps Script 後，重新載入內容會在此建立 10 分鐘有效的安全預覽連結。'),
 ];
 
 const totalRows = outputRows.length;
@@ -277,6 +276,7 @@ const requests = [
     },
   },
   merge(0, 2, 0, 2),
+  merge(5, 6, 0, 2),
   ...sectionRows.map((row) => merge(row - 1, row, 0, 2)),
   ...diyItemHeaderRows.map((row) => merge(row - 1, row, 0, 2)),
   {
@@ -632,6 +632,30 @@ const requests = [
       fields: 'userEnteredFormat',
     },
   })),
+  { unmergeCells: { range: { sheetId: controlId, startRowIndex: 19, endRowIndex: 21, startColumnIndex: 0, endColumnIndex: 6 } } },
+  {
+    mergeCells: {
+      range: { sheetId: controlId, startRowIndex: 19, endRowIndex: 21, startColumnIndex: 0, endColumnIndex: 6 },
+      mergeType: 'MERGE_ALL',
+    },
+  },
+  {
+    updateCells: {
+      range: { sheetId: controlId, startRowIndex: 19, endRowIndex: 21, startColumnIndex: 0, endColumnIndex: 6 },
+      rows: [
+        { values: [{ userEnteredValue: { stringValue: '👁 預覽：請使用上方「🌹 內容後台」選單' } }] },
+        { values: [{}] },
+      ],
+      fields: 'userEnteredValue',
+    },
+  },
+  {
+    repeatCell: {
+      range: { sheetId: controlId, startRowIndex: 19, endRowIndex: 21, startColumnIndex: 0, endColumnIndex: 6 },
+      cell: { userEnteredFormat: controlButtonFormat('#356f80') },
+      fields: 'userEnteredFormat',
+    },
+  },
 ];
 
 if (totalRows < 100 || contentRows.length < 100) {

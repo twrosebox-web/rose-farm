@@ -59,4 +59,64 @@ assert.equal(windowObject.DATA.diningContent.signatureTitle, "雲端招牌料理
 assert.equal({}.polluted, undefined);
 assert.equal(document.documentElement.dataset.cloudData, "loaded");
 
+const previewScripts = [];
+const previewStatus = {
+  textContent: "",
+  classList: { toggle() {} },
+};
+const previewBanner = {
+  classList: {
+    removed: [],
+    remove(value) { this.removed.push(value); },
+  },
+};
+const previewDocument = {
+  activeElement: null,
+  body: {},
+  documentElement: { dataset: {} },
+  head: { appendChild(script) { previewScripts.push(script); } },
+  addEventListener() {},
+  createElement() {
+    return { remove() {}, set src(value) { this._src = value; }, get src() { return this._src; } };
+  },
+  getElementById(id) {
+    if (id === "draft-preview-banner") return previewBanner;
+    if (id === "draft-preview-status") return previewStatus;
+    return null;
+  },
+  querySelectorAll() { return []; },
+};
+const previewWindow = {
+  CLOUD_CONFIG: { endpoint: "https://example.com/exec" },
+  DATA: { siteConfig: { ticket: { full: 200 } } },
+  location: { search: "?preview=draft&token=preview-token" },
+  getSelection: () => ({ toString: () => "使用者正在反白" }),
+  setTimeout: () => 1,
+  clearTimeout() {},
+};
+const previewContext = {
+  console,
+  Date,
+  Object,
+  Promise,
+  document: previewDocument,
+  window: previewWindow,
+};
+vm.createContext(previewContext);
+vm.runInContext(fs.readFileSync(new URL("./cloud-data.js", import.meta.url), "utf8"), previewContext);
+
+assert.equal(previewScripts.length, 1);
+assert.match(previewScripts[0].src, /[?&]mode=draft(?:&|$)/);
+assert.match(previewScripts[0].src, /[?&]token=preview-token(?:&|$)/);
+assert.deepEqual(previewBanner.classList.removed, ["hidden"]);
+previewWindow.roseFarmCloudCallback({
+  ok: true,
+  mode: "draft",
+  values: { "siteConfig.ticket.full": 300 },
+  updatedAt: {},
+});
+assert.equal(previewWindow.DATA.siteConfig.ticket.full, 300);
+assert.equal(previewDocument.documentElement.dataset.contentMode, "draft");
+assert.match(previewStatus.textContent, /尚未發布/);
+
 console.log("Cloud data tests passed");

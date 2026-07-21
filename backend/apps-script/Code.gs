@@ -1,4 +1,4 @@
-/* global CacheService, ContentService, LockService, PropertiesService, ScriptApp, SpreadsheetApp */
+/* global CacheService, ContentService, HtmlService, LockService, PropertiesService, ScriptApp, SpreadsheetApp, Utilities */
 
 const BACKEND = Object.freeze({
   sheetName: '內容資料',
@@ -36,11 +36,21 @@ const EDITOR = Object.freeze({
   }),
 });
 
+const PREVIEW = Object.freeze({
+  pageUrl: 'https://twrosebox-web.github.io/rose-farm/',
+  cachePrefix: 'rose-farm-draft-preview-',
+  tokenSeconds: 600,
+});
+
 /**
  * 公開讀取端。前端以 <script src="...?callback=函式名"> 載入 JSONP。
  */
 function doGet(e) {
+  const action = String((e && e.parameter && e.parameter.action) || '').trim().toLowerCase();
+  if (action === 'preview') return previewRedirectOutput_();
+
   const callback = String((e && e.parameter && e.parameter.callback) || 'roseFarmCloudCallback');
+  const mode = String((e && e.parameter && e.parameter.mode) || '').trim().toLowerCase();
   if (!isValidCallback_(callback)) {
     return jsonpOutput_('roseFarmCloudCallback', {
       ok: false,
@@ -49,6 +59,10 @@ function doGet(e) {
   }
 
   try {
+    if (mode === 'draft') {
+      assertDraftPreviewToken_(e && e.parameter && e.parameter.token);
+      return jsonpOutput_(callback, buildDraftPayload_());
+    }
     const cache = CacheService.getScriptCache();
     const cached = cache.get(BACKEND.cacheKey);
     const payload = cached ? JSON.parse(cached) : buildPublicPayload_();
@@ -62,6 +76,79 @@ function doGet(e) {
       error: safeErrorMessage_(error),
     });
   }
+}
+
+function createDraftPreviewUrl_() {
+  const token = Utilities.getUuid();
+  CacheService.getScriptCache().put(`${PREVIEW.cachePrefix}${token}`, '1', PREVIEW.tokenSeconds);
+  return `${PREVIEW.pageUrl}?preview=draft&token=${encodeURIComponent(token)}`;
+}
+
+function assertDraftPreviewToken_(token) {
+  const safeToken = String(token || '').trim();
+  if (!safeToken || !CacheService.getScriptCache().get(`${PREVIEW.cachePrefix}${safeToken}`)) {
+    throw new Error('草稿預覽連結已失效，請回到後台重新開啟。');
+  }
+}
+
+function previewRedirectOutput_() {
+  const url = createDraftPreviewUrl_();
+  return HtmlService.createHtmlOutput(
+    `<meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${url}">`
+      + `<p>正在開啟草稿預覽……若沒有自動跳轉，<a href="${url}">請點這裡</a>。</p>`,
+  ).setTitle('大花農場草稿預覽');
+}
+
+/**
+ * 草稿預覽端：只讀取「批次編輯」黃色欄位，不寫入正式內容資料。
+ */
+function buildDraftPayload_(spreadsheetOverride) {
+  const spreadsheet = spreadsheetOverride || getBackendSpreadsheet_();
+  if (!spreadsheet) throw new Error('找不到後台試算表。');
+  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
+  if (!editor) throw new Error(`找不到「${EDITOR.sheetName}」分頁。`);
+
+  const lastRow = editor.getLastRow();
+  if (lastRow < EDITOR.dataStartRow) {
+    throw new Error('批次編輯分頁沒有可預覽的內容。');
+  }
+
+  const rowCount = lastRow - EDITOR.dataStartRow + 1;
+  const rows = editor.getRange(
+    EDITOR.dataStartRow,
+    EDITOR.columns.value,
+    rowCount,
+    EDITOR.columns.active - EDITOR.columns.value + 1,
+  ).getValues();
+  const values = {};
+  const types = {};
+  const updatedAt = {};
+  const previewTime = new Date().toISOString();
+
+  rows.forEach((row) => {
+    const rawValue = row[EDITOR.columns.value - EDITOR.columns.value];
+    const key = String(row[EDITOR.columns.key - EDITOR.columns.value] || '').trim();
+    const type = String(row[EDITOR.columns.type - EDITOR.columns.value] || 'string');
+    const active = row[EDITOR.columns.active - EDITOR.columns.value] === true;
+    if (!key || !active || !isValidKey_(key)) return;
+
+    try {
+      values[key] = coerceValue_(rawValue, type);
+    } catch (error) {
+      values[key] = rawValue == null ? '' : String(rawValue);
+    }
+    types[key] = type;
+    updatedAt[key] = previewTime;
+  });
+
+  return {
+    ok: true,
+    mode: 'draft',
+    values,
+    types,
+    updatedAt,
+    generatedAt: previewTime,
+  };
 }
 
 /**
@@ -111,7 +198,21 @@ function onOpen() {
     .createMenu('🌹 內容後台')
     .addItem('重新載入全部內容', 'refreshEditorUi')
     .addItem('開啟批次編輯', 'openEditorSheet')
+    .addItem('預覽尚未發布的修改', 'showDraftPreview')
     .addToUi();
+}
+
+function showDraftPreview() {
+  const serviceUrl = ScriptApp.getService().getUrl();
+  if (!serviceUrl) throw new Error('請先將 Apps Script 部署為網頁應用程式。');
+  const url = `${serviceUrl}?action=preview`;
+  const html = HtmlService.createHtmlOutput(
+    `<div style="font-family:sans-serif;padding:20px;line-height:1.7">`
+      + `<p>預覽連結每次開啟後 10 分鐘內有效，不會發布內容。</p>`
+      + `<p><a href="${url}" target="_blank" style="display:inline-block;background:#356f80;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none;font-weight:bold">👁 開啟草稿預覽</a></p>`
+      + `</div>`,
+  ).setWidth(420).setHeight(180);
+  SpreadsheetApp.getUi().showModalDialog(html, '預覽尚未發布的修改');
 }
 
 function openEditorSheet() {
@@ -197,6 +298,17 @@ function refreshEditorUi(spreadsheetOverride) {
   editor.getRange(EDITOR.refreshCell).setValue(false);
   editor.getRange(EDITOR.publishCell).setValue(false);
   editor.getRange(EDITOR.statusCell).setValue(`已載入 ${entries.length} 個欄位`);
+  updateDraftPreviewLinks_(spreadsheet);
+}
+
+function updateDraftPreviewLinks_(spreadsheet) {
+  const serviceUrl = ScriptApp.getService().getUrl();
+  if (!serviceUrl) return;
+  const formula = `=HYPERLINK("${serviceUrl}?action=preview","👁 預覽尚未發布的修改")`;
+  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
+  if (editor) editor.getRange('A6').setFormula(formula);
+  const control = spreadsheet.getSheetByName('控制台');
+  if (control) control.getRange('A20').setFormula(formula);
 }
 
 function publishBatchEditor_(spreadsheetOverride) {
