@@ -1,5 +1,5 @@
 /* ============================================
-   draft-inspector.js：草稿預覽圖片 → Sheet 欄位定位
+   draft-inspector.js：草稿預覽圖片 → 專屬後台／Sheet 欄位定位
    只在 Apps Script 草稿預覽模式啟用，不影響正式網站訪客。
    ============================================ */
 (function() {
@@ -48,6 +48,7 @@
                 '#draft-inspector-panel .draft-cell{display:inline-block;background:#fff1ad;border:1px solid #d5ad32;border-radius:8px;padding:5px 9px;font-size:18px;font-weight:800;color:#734c00;}',
                 '#draft-inspector-panel .draft-key{font:12px/1.45 ui-monospace,monospace;color:#64748b;overflow-wrap:anywhere;}',
                 '#draft-inspector-panel a{display:block;margin-top:15px;background:#3a5a40;color:#fff!important;text-align:center;text-decoration:none;border-radius:10px;padding:12px 15px;font-size:16px;font-weight:800;}',
+                '#draft-inspector-panel a.draft-sheet-link{margin-top:8px;background:#edf4ee;color:#264b35!important;font-size:13px;}',
                 '#draft-inspector-close{position:absolute;right:12px;top:10px;width:34px;height:34px;border:0;border-radius:50%;background:#edf4ee;color:#264b35;font-size:20px;font-weight:800;cursor:pointer;}',
                 '@media(max-width:640px){#draft-inspector-panel{right:10px;bottom:10px;width:calc(100vw - 20px);}}'
             ].join('');
@@ -79,7 +80,7 @@
             panel.appendChild(closeButton);
 
             var heading = document.createElement('h2');
-            heading.textContent = '這張圖片在 Sheet 哪裡？';
+            heading.textContent = '這張圖片要去哪裡改？';
             panel.appendChild(heading);
 
             var name = document.createElement('p');
@@ -87,11 +88,12 @@
             panel.appendChild(name);
 
             var location = document.createElement('p');
-            location.appendChild(document.createTextNode('請修改「批次編輯」分頁的 '));
+            location.appendChild(document.createTextNode('後台欄位位置（Sheet 備援：批次編輯 '));
             var cell = document.createElement('span');
             cell.id = 'draft-inspector-cell';
             cell.className = 'draft-cell';
             location.appendChild(cell);
+            location.appendChild(document.createTextNode('）'));
             panel.appendChild(location);
 
             var key = document.createElement('p');
@@ -104,6 +106,13 @@
             link.target = '_blank';
             link.rel = 'noopener noreferrer';
             panel.appendChild(link);
+
+            var sheetLink = document.createElement('a');
+            sheetLink.id = 'draft-inspector-sheet-link';
+            sheetLink.className = 'draft-sheet-link';
+            sheetLink.target = '_blank';
+            sheetLink.rel = 'noopener noreferrer';
+            panel.appendChild(sheetLink);
             document.body.appendChild(panel);
         }
     }
@@ -114,7 +123,7 @@
             if (!sheetRowFor(image)) return;
             image.setAttribute('role', 'button');
             image.setAttribute('tabindex', '0');
-            image.setAttribute('title', '草稿預覽：點一下查看這張圖片在 Sheet 的位置');
+            image.setAttribute('title', '草稿預覽：點一下直接前往後台修改');
         });
     }
 
@@ -124,7 +133,7 @@
         if (currentImage && currentImage !== image) currentImage.classList.remove('draft-inspector-hover');
         currentImage = image;
         image.classList.add('draft-inspector-hover');
-        tooltip.textContent = '點一下 → 批次編輯 B' + row;
+        tooltip.textContent = '點一下 → 前往後台修改這張圖片';
         tooltip.style.display = 'block';
         var left = Math.min((event.clientX || 0) + 14, window.innerWidth - 275);
         var top = Math.max(10, (event.clientY || 0) + 14);
@@ -147,8 +156,11 @@
         document.getElementById('draft-inspector-cell').textContent = 'B' + row;
         document.getElementById('draft-inspector-key').textContent = '欄位代碼：' + key;
         var link = document.getElementById('draft-inspector-link');
-        link.href = sheetUrl(row);
-        link.textContent = '在 Google Sheet 開啟 B' + row + ' →';
+        link.href = 'admin.html?field=' + encodeURIComponent(key);
+        link.textContent = '在專屬後台開啟這個欄位 →';
+        var sheetLink = document.getElementById('draft-inspector-sheet-link');
+        sheetLink.href = sheetUrl(row);
+        sheetLink.textContent = '改用 Google Sheet 開啟 B' + row;
         panel.classList.add('is-open');
     }
 

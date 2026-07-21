@@ -100,8 +100,10 @@ listeners.click({
 assert.equal(prevented, true);
 assert.equal(stopped, true);
 assert.equal(elements.get("draft-inspector-cell").textContent, "B48");
-assert.match(elements.get("draft-inspector-link").href, /gid=2026072101&range=B48$/);
-assert.match(elements.get("draft-inspector-link").textContent, /B48/);
+assert.equal(elements.get("draft-inspector-link").href, "admin.html?field=food.0.image");
+assert.match(elements.get("draft-inspector-link").textContent, /專屬後台/);
+assert.match(elements.get("draft-inspector-sheet-link").href, /gid=2026072101&range=B48$/);
+assert.match(elements.get("draft-inspector-sheet-link").textContent, /B48/);
 assert.equal(elements.get("draft-inspector-panel").classList.contains("is-open"), true);
 
 console.log("Draft inspector tests passed");
