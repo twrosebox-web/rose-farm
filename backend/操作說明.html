@@ -42,18 +42,18 @@
 <body>
 <main>
     <h1>大花農場內容後台</h1>
-    <p class="lead">農場人員一頁操作說明｜平常只需要修改 D 欄「目前值」。</p>
+    <p class="lead">農場人員一頁操作說明｜使用「後台編輯」面板，一次修改一個項目。</p>
 
     <section class="steps" aria-label="四步驟操作流程">
-        <div class="step"><span class="number">1</span><strong>開啟內容資料</strong>進入 Google Sheet，切換到「內容資料」分頁。</div>
-        <div class="step"><span class="number">2</span><strong>找到要改的項目</strong>用「區塊」篩選票價、餐廳、DIY 或 FAQ。</div>
-        <div class="step"><span class="number">3</span><strong>只改 D 欄</strong>在黃色提示的「目前值」儲存格輸入新內容。</div>
-        <div class="step"><span class="number">4</span><strong>重新整理網頁</strong>雲端載入成功後，新的內容會顯示在對應區塊。</div>
+        <div class="step"><span class="number">1</span><strong>開啟後台編輯</strong>進入 Google Sheet，切換到「後台編輯」分頁。</div>
+        <div class="step"><span class="number">2</span><strong>選擇分類與項目</strong>從下拉選單選票價、餐廳、DIY 或 FAQ。</div>
+        <div class="step"><span class="number">3</span><strong>輸入新內容</strong>只修改黃色區域，再勾選「我已確認內容」。</div>
+        <div class="step"><span class="number">4</span><strong>發布更新</strong>勾選「發布更新」，看到「已更新 ✓」後再檢查網頁。</div>
     </section>
 
     <div class="sheet-demo" aria-label="試算表欄位示意">
-        <div class="cell head">區塊</div><div class="cell head">項目</div><div class="cell head key">key（勿動）</div><div class="cell head">目前值（只改這欄）</div>
-        <div class="cell">票價</div><div class="cell">全票</div><div class="cell key">siteConfig.ticket.full</div><div class="cell edit">200</div>
+        <div class="cell head">分類</div><div class="cell head">項目</div><div class="cell head key">目前內容</div><div class="cell head">新內容</div>
+        <div class="cell">票價</div><div class="cell">全票</div><div class="cell key">200</div><div class="cell edit">250</div>
     </div>
 
     <table aria-label="後台區塊與網頁位置對照表">
@@ -70,7 +70,7 @@
     </table>
 
     <div class="warning"><strong>品牌紅線：</strong>農場只能寫「自然農法」。若文字出現「有機／Organic」，請先交由 Shao 核決，不可直接發布。</div>
-    <div class="note"><strong>不要修改：</strong>C 欄 key、E 欄類型與 H 欄 updatedAt。雲端讀取失敗時，網頁會自動使用 <code>data.js</code> 的內建內容，不會整頁空白。</div>
+    <div class="note"><strong>底層資料：</strong>「內容資料」已隱藏，不需要日常操作。雲端讀取失敗時，網頁會自動使用 <code>data.js</code> 的內建內容，不會整頁空白。</div>
 
     <a class="button" href="https://docs.google.com/spreadsheets/d/16cH2RYwjp0egiijK0AxZh7sNC4yUfjSNZchC57jf7N8/edit" target="_blank" rel="noopener">開啟大花農場內容後台</a>
 </main>

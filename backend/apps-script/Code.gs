@@ -19,6 +19,21 @@ const BACKEND = Object.freeze({
   cacheSeconds: 60,
 });
 
+const EDITOR = Object.freeze({
+  sheetName: '後台編輯',
+  categoryCell: 'B5',
+  itemCell: 'B7',
+  currentCell: 'B9',
+  newValueCell: 'B13',
+  guidanceCell: 'B18',
+  updatedAtCell: 'B21',
+  statusCell: 'D21',
+  confirmCell: 'B23',
+  publishCell: 'D23',
+  keyCell: 'H2',
+  rowCell: 'H3',
+});
+
 /**
  * 公開讀取端。前端以 <script src="...?callback=函式名"> 載入 JSONP。
  */
@@ -72,7 +87,244 @@ function setupBackend() {
     throw new Error('請從「大花農場內容後台」試算表開啟 Apps Script 後再執行。');
   }
   PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', spreadsheet.getId());
+  refreshEditorUi();
   return { ok: true, spreadsheetId: spreadsheet.getId() };
+}
+
+/**
+ * 開啟試算表時顯示簡單的後台選單。
+ */
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('🌹 內容後台')
+    .addItem('重新整理編輯面板', 'refreshEditorUi')
+    .addItem('開啟編輯面板', 'openEditorSheet')
+    .addToUi();
+}
+
+function openEditorSheet() {
+  const spreadsheet = getBackendSpreadsheet_();
+  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
+  if (!editor) throw new Error(`找不到「${EDITOR.sheetName}」分頁。`);
+  spreadsheet.setActiveSheet(editor);
+}
+
+/**
+ * Sheet 編輯事件：處理單筆 UI 發布，也維護內容資料的 updatedAt 與快取。
+ */
+function onEdit(e) {
+  if (!e || !e.range) return;
+  const sheet = e.range.getSheet();
+  const sheetName = sheet.getName();
+
+  if (
+    sheetName === BACKEND.sheetName
+    && e.range.getColumn() === BACKEND.columns.value
+    && e.range.getRow() >= BACKEND.dataStartRow
+  ) {
+    sheet.getRange(e.range.getRow(), BACKEND.columns.updatedAt)
+      .setValue(new Date().toISOString())
+      .setNumberFormat('@');
+    CacheService.getScriptCache().remove(BACKEND.cacheKey);
+    return;
+  }
+
+  if (sheetName !== EDITOR.sheetName) return;
+  const a1 = e.range.getA1Notation();
+  if (a1 === EDITOR.categoryCell) {
+    refreshEditorItems_();
+  } else if (a1 === EDITOR.itemCell) {
+    loadEditorSelection_();
+  } else if (a1 === EDITOR.newValueCell) {
+    sheet.getRange(EDITOR.statusCell).setValue('尚未發布');
+  } else if (a1 === EDITOR.publishCell && e.value === 'TRUE') {
+    publishEditorValue_();
+  }
+}
+
+function refreshEditorUi() {
+  const spreadsheet = getBackendSpreadsheet_();
+  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
+  if (!editor) throw new Error(`找不到「${EDITOR.sheetName}」分頁。`);
+  const rows = getContentRows_();
+  const categories = [...new Set(rows.map((entry) => entry.section).filter(Boolean))];
+  if (!categories.length) throw new Error('內容資料沒有可編輯的分類。');
+
+  const categoryRange = editor.getRange(EDITOR.categoryCell);
+  categoryRange.setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(categories, true)
+      .setAllowInvalid(false)
+      .build(),
+  );
+  if (!categories.includes(String(categoryRange.getValue() || ''))) {
+    categoryRange.setValue(categories[0]);
+  }
+  refreshEditorItems_();
+}
+
+function refreshEditorItems_() {
+  const spreadsheet = getBackendSpreadsheet_();
+  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
+  const category = String(editor.getRange(EDITOR.categoryCell).getValue() || '');
+  const items = getContentRows_().filter((entry) => entry.section === category);
+  if (!items.length) {
+    editor.getRange(EDITOR.itemCell).clearContent().clearDataValidations();
+    clearEditorFields_(editor, '此分類目前沒有資料');
+    return;
+  }
+
+  const labels = items.map((entry) => entry.editorLabel);
+  const itemRange = editor.getRange(EDITOR.itemCell);
+  itemRange.setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(labels, true)
+      .setAllowInvalid(false)
+      .build(),
+  );
+  if (!labels.includes(String(itemRange.getValue() || ''))) {
+    itemRange.setValue(labels[0]);
+  }
+  loadEditorSelection_();
+}
+
+function loadEditorSelection_() {
+  const spreadsheet = getBackendSpreadsheet_();
+  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
+  const category = String(editor.getRange(EDITOR.categoryCell).getValue() || '');
+  const label = String(editor.getRange(EDITOR.itemCell).getValue() || '');
+  const entry = getContentRows_().find(
+    (candidate) => candidate.section === category && candidate.editorLabel === label,
+  );
+  if (!entry) {
+    clearEditorFields_(editor, '找不到所選項目');
+    return;
+  }
+
+  editor.getRange(EDITOR.currentCell).setValue(entry.value);
+  editor.getRange(EDITOR.newValueCell).setValue(entry.value);
+  editor.getRange(EDITOR.guidanceCell).setValue(entry.guidance || '請依網站實際內容填寫。');
+  editor.getRange(EDITOR.updatedAtCell).setValue(entry.updatedAt || '尚無紀錄');
+  editor.getRange(EDITOR.statusCell).setValue('尚未修改');
+  editor.getRange(EDITOR.confirmCell).setValue(false);
+  editor.getRange(EDITOR.publishCell).setValue(false);
+  editor.getRange(EDITOR.keyCell).setValue(entry.key);
+  editor.getRange(EDITOR.rowCell).setValue(entry.sheetRow);
+}
+
+function publishEditorValue_() {
+  const spreadsheet = getBackendSpreadsheet_();
+  const editor = spreadsheet.getSheetByName(EDITOR.sheetName);
+  const publishRange = editor.getRange(EDITOR.publishCell);
+
+  try {
+    if (editor.getRange(EDITOR.confirmCell).getValue() !== true) {
+      throw new Error('請先勾選「我已確認內容」。');
+    }
+
+    const key = String(editor.getRange(EDITOR.keyCell).getValue() || '').trim();
+    const sheetRow = Number(editor.getRange(EDITOR.rowCell).getValue());
+    if (!isValidKey_(key) || !Number.isInteger(sheetRow)) {
+      throw new Error('編輯項目資料不完整，請重新整理編輯面板。');
+    }
+
+    const contentSheet = getContentSheet_();
+    const row = contentSheet
+      .getRange(sheetRow, 1, 1, BACKEND.columns.active)
+      .getValues()[0];
+    if (String(row[BACKEND.columns.key - 1] || '').trim() !== key) {
+      throw new Error('資料列已變動，請重新選擇編輯項目。');
+    }
+
+    const rawValue = editor.getRange(EDITOR.newValueCell).getValue();
+    const required = String(row[BACKEND.columns.required - 1] || '') === '是';
+    if (required && isRawEmptyValue_(rawValue)) {
+      throw new Error('必填內容不可留空。');
+    }
+    if (/有機|organic/i.test(String(rawValue || ''))) {
+      throw new Error('內容包含「有機／Organic」，請先交由 Shao 核決。');
+    }
+
+    const type = String(row[BACKEND.columns.type - 1] || 'string');
+    const value = coerceValue_(rawValue, type);
+    const timestamp = new Date().toISOString();
+    contentSheet.getRange(sheetRow, BACKEND.columns.value).setValue(value);
+    contentSheet.getRange(sheetRow, BACKEND.columns.updatedAt).setValue(timestamp).setNumberFormat('@');
+    SpreadsheetApp.flush();
+    CacheService.getScriptCache().remove(BACKEND.cacheKey);
+
+    editor.getRange(EDITOR.currentCell).setValue(value);
+    editor.getRange(EDITOR.newValueCell).setValue(value);
+    editor.getRange(EDITOR.updatedAtCell).setValue(timestamp);
+    editor.getRange(EDITOR.statusCell).setValue('已更新 ✓');
+    editor.getRange(EDITOR.confirmCell).setValue(false);
+  } catch (error) {
+    editor.getRange(EDITOR.statusCell).setValue(safeErrorMessage_(error));
+  } finally {
+    publishRange.setValue(false);
+  }
+}
+
+function getBackendSpreadsheet_() {
+  const spreadsheetId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  return spreadsheetId
+    ? SpreadsheetApp.openById(spreadsheetId)
+    : SpreadsheetApp.getActiveSpreadsheet();
+}
+
+function getContentRows_() {
+  const sheet = getContentSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < BACKEND.dataStartRow) return [];
+  return sheet
+    .getRange(
+      BACKEND.dataStartRow,
+      1,
+      lastRow - BACKEND.dataStartRow + 1,
+      BACKEND.columns.active,
+    )
+    .getValues()
+    .map((row, index) => ({
+      section: String(row[BACKEND.columns.section - 1] || '').trim(),
+      item: String(row[BACKEND.columns.item - 1] || '').trim(),
+      key: String(row[BACKEND.columns.key - 1] || '').trim(),
+      value: row[BACKEND.columns.value - 1],
+      guidance: String(row[BACKEND.columns.guidance - 1] || ''),
+      updatedAt: normalizeTimestamp_(row[BACKEND.columns.updatedAt - 1]),
+      sheetRow: BACKEND.dataStartRow + index,
+    }))
+    .filter((entry) => entry.key)
+    .map((entry) => ({ ...entry, editorLabel: makeEditorLabel_(entry) }));
+}
+
+function makeEditorLabel_(entry) {
+  const key = entry.key;
+  const rowsMatch = key.match(/\.rows\.(\d+)\.(label|value|note)$/);
+  if (rowsMatch) {
+    const names = { label: '標籤', value: '內容', note: '補充' };
+    return `${entry.item}｜表格第 ${Number(rowsMatch[1]) + 1} 列・${names[rowsMatch[2]]}`;
+  }
+  const factsMatch = key.match(/\.facts\.(\d+)$/);
+  if (factsMatch) return `${entry.item}｜重點 ${Number(factsMatch[1]) + 1}`;
+
+  const field = key.split('.').pop();
+  const names = {
+    homeUrl: '官網網址', phone: '聯絡電話', shopPhone: '展售室手機',
+    enabled: '是否顯示', text: '內容', full: '全票', fullDiscount: '全票折抵',
+    half: '半票', halfDiscount: '半票折抵', freeRule: '免票規則', time: '營業時間',
+    note: '補充說明', price: '價格', subPrice: '價格單位', name: '名稱',
+    tag: '時長', group: '成團人數', image: '圖片網址', title: '標題',
+    q: '問題', a: '答案',
+  };
+  return `${entry.item}｜${names[field] || field}`;
+}
+
+function clearEditorFields_(editor, status) {
+  [EDITOR.currentCell, EDITOR.newValueCell, EDITOR.guidanceCell, EDITOR.updatedAtCell,
+    EDITOR.keyCell, EDITOR.rowCell].forEach((cell) => editor.getRange(cell).clearContent());
+  editor.getRange(EDITOR.statusCell).setValue(status);
+  editor.getRange(EDITOR.confirmCell).setValue(false);
+  editor.getRange(EDITOR.publishCell).setValue(false);
 }
 
 function buildPublicPayload_() {
@@ -140,6 +392,9 @@ function updateRows_(updates) {
 
       const type = String(found.row[BACKEND.columns.type - 1] || 'string');
       const required = String(found.row[BACKEND.columns.required - 1] || '') === '是';
+      if (required && isRawEmptyValue_(update.value)) {
+        throw new Error(`必填欄位不可留空：${key}`);
+      }
       const value = coerceValue_(update.value, type);
       if (required && isEmptyValue_(value)) {
         throw new Error(`必填欄位不可留空：${key}`);
@@ -220,6 +475,10 @@ function normalizeTimestamp_(value) {
 }
 
 function isEmptyValue_(value) {
+  return value == null || (typeof value === 'string' && value.trim() === '');
+}
+
+function isRawEmptyValue_(value) {
   return value == null || (typeof value === 'string' && value.trim() === '');
 }
 

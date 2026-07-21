@@ -88,6 +88,10 @@ assert.equal(context.isValidCallback_("window.cloudCallback"), true);
 assert.equal(context.isValidCallback_("alert(1)"), false);
 assert.equal(context.coerceValue_("250", "number"), 250);
 assert.equal(context.coerceValue_("false", "boolean"), false);
+assert.equal(
+  context.makeEditorLabel_({ item: "玫瑰花醬DIY", key: "diy.0.price" }),
+  "玫瑰花醬DIY｜價格",
+);
 
 const postResult = context.doPost({
   postData: {
@@ -118,5 +122,17 @@ const invalidPost = context.doPost({
   },
 });
 assert.equal(JSON.parse(invalidPost.text).ok, false);
+
+const blankRequiredNumber = context.doPost({
+  postData: {
+    contents: JSON.stringify({
+      passcode: "secret",
+      key: "siteConfig.ticket.full",
+      value: "",
+    }),
+  },
+});
+assert.equal(JSON.parse(blankRequiredNumber.text).ok, false);
+assert.equal(sheetRows[1][3], 250);
 
 console.log("Apps Script tests passed");
