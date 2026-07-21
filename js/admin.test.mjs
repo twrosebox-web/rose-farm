@@ -39,6 +39,9 @@ assert.equal(api.categoryForEntry({ key: 'diy.2.price' }), 'diy');
 assert.equal(api.categoryForEntry({ key: 'qa.categories.0.list.1.q' }), 'faq');
 assert.equal(api.categoryForEntry({ key: 'services.1.price' }), 'services');
 assert.equal(api.categoryForEntry({ key: 'heroSlides.0.image' }), 'images');
+assert.equal(api.faqCategoryIndex({ key: 'qa.categories.3.list.2.q' }), '3');
+assert.equal(api.faqCategoryIndex({ key: 'qa.infoIcons.2.text' }), 'info');
+assert.equal(api.faqCategoryIndex({ key: 'siteConfig.ticket.full' }), '');
 
 const entries = api.buildDemoEntries(context.window.DATA);
 assert.ok(entries.length > 150, `expected many editable fields, got ${entries.length}`);

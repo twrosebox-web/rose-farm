@@ -33,7 +33,7 @@
     var state = {
         entries: [], entryByKey: new Map(), official: {}, originalDraft: {}, current: {}, dirty: new Set(),
         passcode: '', connected: false, demo: false, activeSection: 'all', query: '', dirtyOnly: false,
-        pendingConfirm: null, toastTimer: null
+        faqCategory: '0', pendingConfirm: null, toastTimer: null
     };
 
     function byId(id) { return document.getElementById(id); }
@@ -292,10 +292,56 @@
         return match ? match[1] : entry.key;
     }
 
+    function faqCategoryIndex(entry) {
+        var key = entry && entry.key ? entry.key : '';
+        if (key.indexOf('qa.infoIcons.') === 0) return 'info';
+        var match = key.match(/^qa\.categories\.(\d+)\./);
+        return match ? match[1] : '';
+    }
+
+    function faqCategoryOptions() {
+        var options = [{ id: 'all', label: '全部', count: 0 }];
+        var questionCount = state.entries.filter(function (entry) { return /^qa\.categories\.\d+\.list\.\d+\.q$/.test(entry.key); }).length;
+        options[0].count = questionCount;
+        state.entries.filter(function (entry) { return /^qa\.categories\.\d+\.name$/.test(entry.key); }).forEach(function (entry) {
+            var id = entry.key.match(/^qa\.categories\.(\d+)\./)[1];
+            var count = state.entries.filter(function (candidate) { return new RegExp('^qa\\.categories\\.' + id + '\\.list\\.\\d+\\.q$').test(candidate.key); }).length;
+            options.push({ id: id, label: String(state.current[entry.key] || entry.item || '未命名分類'), count: count });
+        });
+        var infoCount = state.entries.filter(function (entry) { return /^qa\.infoIcons\.\d+\.title$/.test(entry.key); }).length;
+        if (infoCount) options.push({ id: 'info', label: '入口資訊圖示', count: infoCount });
+        return options;
+    }
+
+    function renderFaqCategoryBar() {
+        var active = state.query ? 'all' : state.faqCategory;
+        return '<div class="faq-category-wrap"><div class="faq-category-heading"><strong>先選問題分類</strong><span>' +
+            (state.query ? '搜尋時會比對所有分類' : '一次只看一類，比較好找') + '</span></div><div class="faq-category-bar">' +
+            faqCategoryOptions().map(function (option) {
+                return '<button class="faq-category-button' + (active === option.id ? ' active' : '') + '" type="button" data-faq-category="' + escapeAttr(option.id) + '">' +
+                    '<span>' + escapeHtml(option.label) + '</span><small>' + option.count + ' 題</small></button>';
+            }).join('') + '</div></div>';
+    }
+
+    function visibleFaqEntries() {
+        var all = state.entries.filter(function (entry) { return matchesCategory(entry, 'faq'); });
+        if (!state.query && !state.dirtyOnly && state.faqCategory !== 'all') {
+            return all.filter(function (entry) { return faqCategoryIndex(entry) === state.faqCategory; });
+        }
+        if (!state.query && !state.dirtyOnly) return all;
+        var matched = filterEntries(all, 'faq', state.query, state.dirtyOnly, state.dirty);
+        var matchedKeys = new Set(matched.map(function (entry) { return entry.key; }));
+        var matchedPrefixes = new Set(matched.map(faqPrefix));
+        return all.filter(function (entry) {
+            var prefix = faqPrefix(entry);
+            return matchedKeys.has(entry.key) || (/^qa\.categories\.\d+\.list\.\d+/.test(prefix) && matchedPrefixes.has(prefix));
+        });
+    }
+
     function renderFaq(entries) {
-        var direct = entries.filter(function (entry) { return /^qa\.categories\.\d+\.list\.\d+\.(q|a)$/.test(entry.key); });
-        var groups = groupEntries(direct, faqPrefix);
-        var html = '<div class="section-block">';
+        var questionEntries = entries.filter(function (entry) { return /^qa\.categories\.\d+\.list\.\d+\./.test(entry.key); });
+        var groups = groupEntries(questionEntries, faqPrefix);
+        var html = renderFaqCategoryBar() + '<div class="section-block">';
         groups.forEach(function (items, prefix) {
             var q = getEntry(items, prefix + '.q');
             var a = getEntry(items, prefix + '.a');
@@ -305,13 +351,27 @@
             var categoryEntry = state.entryByKey.get('qa.categories.' + categoryIndex + '.name');
             var categoryName = categoryEntry ? state.current[categoryEntry.key] : (q ? q.item.split('／')[0] : '常見問題');
             var title = q ? state.current[q.key] : '表格型答案';
+            var rowEntries = items.filter(function (entry) { return new RegExp('^' + prefix.replace(/\./g, '\\.') + '\\.rows\\.\\d+\\.').test(entry.key); });
+            var tableRows = groupEntries(rowEntries, function (entry) { var rowMatch = entry.key.match(/\.rows\.(\d+)\./); return rowMatch ? rowMatch[1] : '0'; });
+            var answerHtml = '';
+            if (a) answerHtml = '<div class="faq-answer-field">' + compactField(a, '💬 答案') + '</div>';
+            else if (rowEntries.length) {
+                answerHtml = '<div class="faq-answer-field"><div class="faq-table-label">💬 表格答案</div><div class="faq-table-editor">';
+                tableRows.forEach(function (rowItems, rowIndex) {
+                    answerHtml += '<div class="faq-table-row"><strong>第 ' + (Number(rowIndex) + 1) + ' 列</strong>' +
+                        compactField(rowItems.find(function (entry) { return /\.label$/.test(entry.key); }), '項目') +
+                        compactField(rowItems.find(function (entry) { return /\.value$/.test(entry.key); }), '內容') +
+                        compactField(rowItems.find(function (entry) { return /\.note$/.test(entry.key); }), '補充') + '</div>';
+                });
+                answerHtml += '</div></div>';
+            }
             html += '<article class="faq-card"><header class="faq-card-header"><span class="faq-number">' + (questionIndex + 1) + '</span>' +
                 '<div class="faq-title-wrap"><small>' + escapeHtml(categoryName) + '</small><h4>' + escapeHtml(title || '尚未填寫題目') + '</h4></div></header>' +
                 '<div class="faq-card-body">' + (q ? '<div class="faq-question-field">' + compactField(q, '❓ 問題') + '</div>' : '') +
-                (a ? '<div class="faq-answer-field">' + compactField(a, '💬 答案') + '</div>' : '') + '</div></article>';
+                answerHtml + '</div></article>';
         });
-        var remaining = entries.filter(function (entry) { return direct.indexOf(entry) === -1; });
-        if (remaining.length) html += '<h4 class="subsection-title">分類名稱、圖示資訊與表格答案</h4>' + remaining.map(renderFieldCard).join('');
+        var remaining = entries.filter(function (entry) { return questionEntries.indexOf(entry) === -1; });
+        if (remaining.length) html += '<h4 class="subsection-title">分類名稱與入口資訊</h4>' + remaining.map(renderFieldCard).join('');
         return html + '</div>';
     }
 
@@ -324,10 +384,12 @@
         byId('section-kicker').textContent = item.kicker;
         byId('section-title').textContent = item.label;
         byId('section-description').textContent = item.description;
-        var entries = filterEntries(state.entries, state.activeSection, state.query, state.dirtyOnly, state.dirty);
+        var entries = state.activeSection === 'faq'
+            ? visibleFaqEntries()
+            : filterEntries(state.entries, state.activeSection, state.query, state.dirtyOnly, state.dirty);
         var html;
         if (state.activeSection === 'diy' && !state.query && !state.dirtyOnly) html = renderDiy(entries);
-        else if (state.activeSection === 'faq' && !state.query && !state.dirtyOnly) html = renderFaq(entries);
+        else if (state.activeSection === 'faq') html = renderFaq(entries);
         else if (state.activeSection === 'images') html = renderImages(entries);
         else html = renderGeneric(entries);
         byId('editor-content').innerHTML = html;
@@ -586,6 +648,14 @@
             if (input.type === 'checkbox' && /^diy\.\d+\.enabled$/.test(input.dataset.key)) renderContent();
         });
         byId('editor-content').addEventListener('click', function (event) {
+            var faqCategory = event.target.closest('[data-faq-category]');
+            if (faqCategory) {
+                state.faqCategory = faqCategory.dataset.faqCategory;
+                state.query = '';
+                byId('admin-search').value = '';
+                renderContent();
+                return;
+            }
             var disable = event.target.closest('[data-disable-diy]');
             if (disable) disableDiy(disable.dataset.disableDiy);
             if (event.target.closest('#add-diy-button')) addDiy();
@@ -615,6 +685,7 @@
     window.ADMIN_TESTING = {
         isImageKey: isImageKey, categoryForEntry: categoryForEntry, valuesEqual: valuesEqual,
         containsBrandTerm: containsBrandTerm, allowedDemoKey: allowedDemoKey, buildDemoEntries: buildDemoEntries,
+        faqCategoryIndex: faqCategoryIndex,
         filterEntries: function (entries, category, query, dirtyOnly, dirtyKeys, currentValues) {
             var oldCurrent = state.current; state.current = currentValues || {};
             var result = filterEntries(entries, category, query, dirtyOnly, dirtyKeys || new Set());
