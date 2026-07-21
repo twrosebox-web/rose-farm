@@ -33,7 +33,7 @@
     var state = {
         entries: [], entryByKey: new Map(), official: {}, originalDraft: {}, current: {}, dirty: new Set(),
         passcode: '', connected: false, demo: false, activeSection: 'all', query: '', dirtyOnly: false,
-        faqCategory: '0', pendingConfirm: null, toastTimer: null
+        faqCategory: '0', imageCategory: 'hero', pendingConfirm: null, toastTimer: null
     };
 
     function byId(id) { return document.getElementById(id); }
@@ -46,7 +46,47 @@
     function escapeAttr(value) { return escapeHtml(value).replace(/`/g, '&#096;'); }
     function containsBrandTerm(value) { return /有機|organic/i.test(String(value == null ? '' : value)); }
     function isImageKey(key) {
-        return /(^|\.)(image|img)(\.|$)/.test(key) || /^siteConfig\.diningImages\.\d+$/.test(key);
+        return /(^|\.)(image|img)(\.|$)/.test(key)
+            || /^siteConfig\.diningImages\.\d+$/.test(key)
+            || /^features\.\d+\.images\.\d+$/.test(key);
+    }
+
+    function imageCategoryForKey(key) {
+        if (/^heroSlides\./.test(key)) return 'hero';
+        if (/^features\./.test(key)) return 'features';
+        if (/^bentoItems\./.test(key)) return 'bento';
+        if (/^gallery\./.test(key)) return 'gallery';
+        if (/^seasons\./.test(key)) return 'seasons';
+        if (/^eco\./.test(key)) return 'eco';
+        if (/^(siteConfig\.diningImages|diningOptions|food)\./.test(key)) return 'dining';
+        if (/^diy\./.test(key)) return 'diy';
+        if (/^services\./.test(key)) return 'services';
+        if (/^products\./.test(key)) return 'products';
+        return 'other';
+    }
+
+    function imageLocationHint(key) {
+        var firstIndex = key.match(/\.(\d+)/);
+        var number = firstIndex ? Number(firstIndex[1]) + 1 : 1;
+        if (/^heroSlides\./.test(key)) return '首頁最上方主視覺輪播，第 ' + number + ' 張。';
+        if (/^features\.(\d+)\.images\.(\d+)$/.test(key)) {
+            var match = key.match(/^features\.(\d+)\.images\.(\d+)$/);
+            return '首頁「三大特色」第 ' + (Number(match[1]) + 1) + ' 區，第 ' + (Number(match[2]) + 1) + ' 張輪播圖。';
+        }
+        if (/^bentoItems\./.test(key)) return '首頁體驗拼貼卡片，第 ' + number + ' 張。';
+        if (/^gallery\./.test(key)) return '園區相簿區，第 ' + number + ' 張。';
+        if (/^seasons\./.test(key)) return '四季花況區，第 ' + number + ' 張。';
+        if (/^eco\./.test(key)) return '生態觀察區，第 ' + number + ' 張。';
+        if (/^siteConfig\.diningImages\./.test(key)) {
+            var diningHints = ['餐廳介紹的大圓形主圖。', '餐廳介紹右下方圖片。', '餐廳介紹左上方浮動圖片。', '招牌玫瑰白玉鍋主圖。'];
+            return diningHints[number - 1] || ('餐廳介紹圖片，第 ' + number + ' 張。');
+        }
+        if (/^diningOptions\./.test(key)) return '餐廳方案卡片，第 ' + number + ' 張。';
+        if (/^food\./.test(key)) return '特色料理卡片，第 ' + number + ' 張。';
+        if (/^diy\./.test(key)) return 'DIY 體驗方案卡片，第 ' + number + ' 張。';
+        if (/^services\./.test(key)) return '導覽、婚禮或場地服務卡片，第 ' + number + ' 張。';
+        if (/^products\./.test(key)) return '伴手禮商品卡片，第 ' + number + ' 張。';
+        return '網站內容圖片；可從草稿預覽點圖確認實際位置。';
     }
     function normalizeValue(value, type) {
         if (type === 'boolean') return value === true || value === 'true' || value === 'TRUE';
@@ -375,7 +415,65 @@
         return html + '</div>';
     }
 
-    function renderImages(entries) { return '<div class="image-grid">' + entries.map(renderFieldCard).join('') + '</div>'; }
+    function imageCategoryOptions() {
+        var definitions = [
+            { id: 'all', label: '全部圖片' }, { id: 'hero', label: '首頁主視覺' },
+            { id: 'features', label: '三大特色' }, { id: 'bento', label: '體驗拼貼卡' },
+            { id: 'gallery', label: '園區相簿' }, { id: 'seasons', label: '四季花況' },
+            { id: 'eco', label: '生態觀察' }, { id: 'dining', label: '玫瑰餐廳' },
+            { id: 'diy', label: 'DIY 體驗' }, { id: 'services', label: '導覽與場租' },
+            { id: 'products', label: '伴手禮' }, { id: 'other', label: '其他圖片' }
+        ];
+        var images = state.entries.filter(function (entry) { return isImageKey(entry.key); });
+        return definitions.map(function (definition) {
+            var count = definition.id === 'all' ? images.length : images.filter(function (entry) { return imageCategoryForKey(entry.key) === definition.id; }).length;
+            return Object.assign({}, definition, { count: count });
+        }).filter(function (definition) { return definition.id === 'all' || definition.count > 0; });
+    }
+
+    function renderImageCategoryBar() {
+        var active = state.query ? 'all' : state.imageCategory;
+        return '<div class="image-category-wrap"><div class="image-category-heading"><div><strong>先選圖片出現的位置</strong><span>每張卡片都有實際縮圖與網站位置提示</span></div>' +
+            '<span class="image-preview-legend">🖼️ 換網址後，預覽會立即更新</span></div><div class="image-category-bar">' +
+            imageCategoryOptions().map(function (option) {
+                return '<button class="image-category-button' + (active === option.id ? ' active' : '') + '" type="button" data-image-category="' + escapeAttr(option.id) + '">' +
+                    '<span>' + escapeHtml(option.label) + '</span><small>' + option.count + ' 張</small></button>';
+            }).join('') + '</div></div>';
+    }
+
+    function visibleImageEntries() {
+        var all = state.entries.filter(function (entry) { return isImageKey(entry.key); });
+        if (state.query || state.dirtyOnly) return filterEntries(all, 'images', state.query, state.dirtyOnly, state.dirty);
+        if (state.imageCategory === 'all') return all;
+        return all.filter(function (entry) { return imageCategoryForKey(entry.key) === state.imageCategory; });
+    }
+
+    function imageCategoryLabel(key) {
+        var id = imageCategoryForKey(key);
+        var option = imageCategoryOptions().find(function (item) { return item.id === id; });
+        return option ? option.label : '網站圖片';
+    }
+
+    function renderImagePreview(value, key) {
+        if (!value) return '<div class="image-manager-preview empty" data-preview-for="' + escapeAttr(key) + '"><span>尚未設定圖片</span></div>';
+        return '<div class="image-manager-preview" data-preview-for="' + escapeAttr(key) + '"><a href="' + escapeAttr(value) + '" target="_blank" rel="noopener noreferrer" title="開啟原圖">' +
+            '<img src="' + escapeAttr(value) + '" alt="' + escapeAttr(imageLocationHint(key)) + '" loading="lazy"></a></div>';
+    }
+
+    function renderImageCard(entry) {
+        var key = entry.key;
+        var value = String(state.current[key] || '');
+        return '<article class="image-manager-card' + (state.dirty.has(key) ? ' changed' : '') + '" data-field-key="' + escapeAttr(key) + '">' +
+            renderImagePreview(value, key) + '<div class="image-manager-body"><div class="image-card-meta"><span>' + escapeHtml(imageCategoryLabel(key)) + '</span>' +
+            (state.dirty.has(key) ? '<strong>尚未儲存</strong>' : '') + '</div><h4>' + escapeHtml(entry.item || entry.label) + '</h4>' +
+            '<p class="image-location-hint"><b>出現位置：</b>' + escapeHtml(imageLocationHint(key)) + '</p>' +
+            '<label class="image-url-field"><span>圖片網址' + (entry.required ? ' <i>＊</i>' : '') + '</span><input type="url" data-key="' + escapeAttr(key) + '" data-type="string" value="' + escapeAttr(value) + '" placeholder="https://..."' + (entry.required ? ' required' : '') + '></label>' +
+            '<p class="image-current-value">目前正式網址：' + escapeHtml(String(state.official[key] || '（空白）')) + '</p></div></article>';
+    }
+
+    function renderImages(entries) {
+        return renderImageCategoryBar() + '<div class="image-grid image-manager-grid">' + entries.map(renderImageCard).join('') + '</div>';
+    }
 
     function renderContent() {
         var item = navItem(state.activeSection);
@@ -386,7 +484,9 @@
         byId('section-description').textContent = item.description;
         var entries = state.activeSection === 'faq'
             ? visibleFaqEntries()
-            : filterEntries(state.entries, state.activeSection, state.query, state.dirtyOnly, state.dirty);
+            : state.activeSection === 'images'
+                ? visibleImageEntries()
+                : filterEntries(state.entries, state.activeSection, state.query, state.dirtyOnly, state.dirty);
         var html;
         if (state.activeSection === 'diy' && !state.query && !state.dirtyOnly) html = renderDiy(entries);
         else if (state.activeSection === 'faq') html = renderFaq(entries);
@@ -419,7 +519,7 @@
         updateSummary();
         var card = document.querySelector('[data-field-key="' + cssEscape(key) + '"]');
         if (card) {
-            var targetCard = card.closest('.field-card, .diy-card, .faq-card') || card;
+            var targetCard = card.closest('.field-card, .diy-card, .faq-card, .image-manager-card') || card;
             targetCard.classList.toggle('changed', state.dirty.has(key));
             targetCard.classList.toggle('brand-warning', containsBrandTerm(value));
         }
@@ -433,7 +533,14 @@
 
     function updateLiveDetails(key, value) {
         var preview = document.querySelector('[data-preview-for="' + cssEscape(key) + '"]');
-        if (preview) preview.innerHTML = value ? '<img src="' + escapeAttr(value) + '" alt="圖片預覽" loading="lazy">' : '<span>尚未設定圖片</span>';
+        if (preview) {
+            preview.classList.toggle('empty', !value);
+            preview.innerHTML = value
+                ? (preview.classList.contains('image-manager-preview')
+                    ? '<a href="' + escapeAttr(value) + '" target="_blank" rel="noopener noreferrer" title="開啟原圖"><img src="' + escapeAttr(value) + '" alt="圖片預覽" loading="lazy"></a>'
+                    : '<img src="' + escapeAttr(value) + '" alt="圖片預覽" loading="lazy">')
+                : '<span>尚未設定圖片</span>';
+        }
         var field = document.querySelector('[data-key="' + cssEscape(key) + '"]');
         var card = field && (field.closest('.field-card, .compact-field'));
         if (card) {
@@ -648,6 +755,14 @@
             if (input.type === 'checkbox' && /^diy\.\d+\.enabled$/.test(input.dataset.key)) renderContent();
         });
         byId('editor-content').addEventListener('click', function (event) {
+            var imageCategory = event.target.closest('[data-image-category]');
+            if (imageCategory) {
+                state.imageCategory = imageCategory.dataset.imageCategory;
+                state.query = '';
+                byId('admin-search').value = '';
+                renderContent();
+                return;
+            }
             var faqCategory = event.target.closest('[data-faq-category]');
             if (faqCategory) {
                 state.faqCategory = faqCategory.dataset.faqCategory;
@@ -685,7 +800,7 @@
     window.ADMIN_TESTING = {
         isImageKey: isImageKey, categoryForEntry: categoryForEntry, valuesEqual: valuesEqual,
         containsBrandTerm: containsBrandTerm, allowedDemoKey: allowedDemoKey, buildDemoEntries: buildDemoEntries,
-        faqCategoryIndex: faqCategoryIndex,
+        faqCategoryIndex: faqCategoryIndex, imageCategoryForKey: imageCategoryForKey, imageLocationHint: imageLocationHint,
         filterEntries: function (entries, category, query, dirtyOnly, dirtyKeys, currentValues) {
             var oldCurrent = state.current; state.current = currentValues || {};
             var result = filterEntries(entries, category, query, dirtyOnly, dirtyKeys || new Set());

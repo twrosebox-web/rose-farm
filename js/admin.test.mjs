@@ -31,6 +31,7 @@ assert.equal(api.containsBrandTerm('有機農場'), true);
 
 assert.equal(api.isImageKey('diy.0.image'), true);
 assert.equal(api.isImageKey('siteConfig.diningImages.2'), true);
+assert.equal(api.isImageKey('features.1.images.4'), true);
 assert.equal(api.isImageKey('diningContent.ticketNotice'), false);
 
 assert.equal(api.categoryForEntry({ key: 'siteConfig.ticket.full' }), 'ticket');
@@ -42,9 +43,17 @@ assert.equal(api.categoryForEntry({ key: 'heroSlides.0.image' }), 'images');
 assert.equal(api.faqCategoryIndex({ key: 'qa.categories.3.list.2.q' }), '3');
 assert.equal(api.faqCategoryIndex({ key: 'qa.infoIcons.2.text' }), 'info');
 assert.equal(api.faqCategoryIndex({ key: 'siteConfig.ticket.full' }), '');
+assert.equal(api.imageCategoryForKey('heroSlides.2.image'), 'hero');
+assert.equal(api.imageCategoryForKey('siteConfig.diningImages.3'), 'dining');
+assert.equal(api.imageCategoryForKey('diy.4.image'), 'diy');
+assert.equal(api.imageCategoryForKey('products.1.image'), 'products');
+assert.match(api.imageLocationHint('heroSlides.2.image'), /第 3 張/);
+assert.match(api.imageLocationHint('siteConfig.diningImages.3'), /白玉鍋/);
+assert.match(api.imageLocationHint('features.1.images.4'), /第 2 區，第 5 張/);
 
 const entries = api.buildDemoEntries(context.window.DATA);
 assert.ok(entries.length > 150, `expected many editable fields, got ${entries.length}`);
+assert.equal(entries.filter((entry) => api.isImageKey(entry.key)).length, 75);
 assert.ok(entries.some((entry) => entry.key === 'diningContent.signatureTitle'));
 assert.ok(entries.some((entry) => entry.key === 'diningOptions.0.img'));
 assert.ok(entries.some((entry) => entry.key === 'diy.7.enabled'));

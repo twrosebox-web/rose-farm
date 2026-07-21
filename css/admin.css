@@ -159,6 +159,37 @@ button { cursor: pointer; }
 .faq-table-row > strong { align-self: center; color: #846520; font-size: 11px; }
 .image-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
 .image-grid .field-card { grid-template-columns: 1fr; }
+.image-category-wrap { margin-bottom: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,254,250,.96); box-shadow: 0 10px 30px rgba(34,54,41,.06); }
+.image-category-heading { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin: 0 3px 12px; }
+.image-category-heading > div { display: grid; gap: 3px; }
+.image-category-heading strong { color: var(--forest); font-size: 13px; }
+.image-category-heading span { color: var(--muted); font-size: 11px; }
+.image-preview-legend { padding: 7px 10px; border-radius: 9px; color: #72571b !important; background: var(--gold-soft); font-weight: 700; }
+.image-category-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+.image-category-button { min-width: max-content; display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--forest); background: #fff; font-weight: 800; }
+.image-category-button small { padding: 2px 6px; border-radius: 99px; color: var(--muted); background: #edf2ed; font-size: 10px; }
+.image-category-button.active { color: #fff; border-color: var(--forest); background: var(--forest); box-shadow: 0 7px 18px rgba(41,75,53,.18); }
+.image-category-button.active small { color: #fff; background: rgba(255,255,255,.17); }
+.image-manager-grid { gap: 18px; }
+.image-manager-card { overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); box-shadow: 0 9px 28px rgba(34,54,41,.05); transition: border-color .2s, box-shadow .2s; }
+.image-manager-card.changed { border-color: #dfb855; box-shadow: 0 0 0 3px rgba(223,184,85,.12); }
+.image-manager-preview { aspect-ratio: 16 / 10; overflow: hidden; background: #e9eee9; }
+.image-manager-preview a { width: 100%; height: 100%; display: block; }
+.image-manager-preview img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .25s ease; }
+.image-manager-preview a:hover img { transform: scale(1.025); }
+.image-manager-preview.empty { display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+.image-manager-body { display: grid; gap: 11px; padding: 18px; }
+.image-card-meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.image-card-meta span { padding: 4px 8px; border-radius: 7px; color: var(--forest); background: var(--forest-soft); font-size: 10px; font-weight: 800; }
+.image-card-meta strong { color: #8a6517; font-size: 10px; }
+.image-manager-body h4 { margin: -2px 0 0; font-size: 16px; }
+.image-location-hint { margin: 0; padding: 10px 11px; border-left: 3px solid var(--gold); border-radius: 0 9px 9px 0; color: #675b41; background: #fff8e5; font-size: 12px; line-height: 1.6; }
+.image-url-field { display: grid; gap: 6px; }
+.image-url-field > span { color: var(--muted); font-size: 11px; font-weight: 800; }
+.image-url-field i { color: var(--rose); font-style: normal; }
+.image-url-field input { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; outline: none; background: #fff; font-size: 13px; }
+.image-url-field input:focus { border-color: var(--forest); box-shadow: 0 0 0 3px rgba(41,75,53,.09); }
+.image-current-value { margin: 0; color: #8a938c; font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
 .empty-state { padding: 70px 20px; text-align: center; color: var(--muted); }
 .empty-state span { font-size: 42px; }
 .empty-state h3 { margin: 12px 0 5px; color: var(--ink); }
@@ -213,6 +244,9 @@ button { cursor: pointer; }
     .field-card { grid-template-columns: 1fr; gap: 13px; padding: 17px; }
     .field-meta .official-value { max-height: 70px; overflow: auto; }
     .diy-grid, .image-grid { grid-template-columns: 1fr; }
+    .image-category-wrap { padding: 11px; }
+    .image-category-heading { align-items: flex-start; }
+    .image-preview-legend { display: none; }
     .faq-category-wrap { margin-inline: -2px; padding: 11px; }
     .faq-category-heading span { display: none; }
     .faq-table-row { grid-template-columns: 1fr; align-items: stretch; }
