@@ -107,10 +107,14 @@ window.DATA = {
 
     // ========== DIY ==========
     diy: [
-        { modal: 'modal-diy-jam', name: "玫瑰花醬DIY", price: "$250/人", tag: "?分鐘", group: "15人成團", image: "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=600&q=80" },
-        { modal: 'modal-diy-dye', name: "花壽司DIY", price: "$320/人", tag: "?分鐘", group: "15人成團", image: "https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=800&q=80" },
-        { modal: 'modal-diy-distill', name: "手作花禮DIY", price: "$999/人", tag: "?分鐘", group: "5-10人", image: "https://images.unsplash.com/photo-1612217430626-996e9e32e004?w=800&q=80" },
-        { modal: 'modal-diy-tea', name: "手作香氛磚", price: "$350/人", tag: "?分鐘", group: "5-10人", image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&q=80" }
+        { enabled: true, modal: 'modal-diy-jam', name: "玫瑰花醬DIY", price: "$250/人", tag: "?分鐘", group: "15人成團", image: "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=600&q=80" },
+        { enabled: true, modal: 'modal-diy-dye', name: "花壽司DIY", price: "$320/人", tag: "?分鐘", group: "15人成團", image: "https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=800&q=80" },
+        { enabled: true, modal: 'modal-diy-distill', name: "手作花禮DIY", price: "$999/人", tag: "?分鐘", group: "5-10人", image: "https://images.unsplash.com/photo-1612217430626-996e9e32e004?w=800&q=80" },
+        { enabled: true, modal: 'modal-diy-tea', name: "手作香氛磚", price: "$350/人", tag: "?分鐘", group: "5-10人", image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&q=80" },
+        { enabled: false, modal: '', name: '', price: '', tag: '', group: '', image: '' },
+        { enabled: false, modal: '', name: '', price: '', tag: '', group: '', image: '' },
+        { enabled: false, modal: '', name: '', price: '', tag: '', group: '', image: '' },
+        { enabled: false, modal: '', name: '', price: '', tag: '', group: '', image: '' }
     ],
 
     // ========== 伴手禮 ==========

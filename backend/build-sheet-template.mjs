@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
-import { SpreadsheetFile, Workbook } from "@oai/artifact-tool";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -77,12 +76,13 @@ data.diningOptions.forEach((option, optionIndex) => {
 });
 
 data.diy.forEach((diy, diyIndex) => {
-  const item = diy.name || `DIY ${diyIndex + 1}`;
-  addRow("DIY", item, `diy.${diyIndex}.name`, diy.name, "DIY 對外顯示名稱。", true);
-  addRow("DIY", item, `diy.${diyIndex}.price`, diy.price, "價格與單位需一起填寫。", true);
-  addRow("DIY", item, `diy.${diyIndex}.tag`, diy.tag, "時長目前仍有待拍板資料，不可自行猜測。", true);
-  addRow("DIY", item, `diy.${diyIndex}.group`, diy.group, "成團人數尚待拍板；修改前先確認最終數字。", true);
-  addRow("DIY", item, `diy.${diyIndex}.image`, diy.image, "完整圖片網址，需以 https:// 開頭。", true);
+  const item = diy.name || `DIY 項目 ${diyIndex + 1}（可新增）`;
+  addRow("DIY", item, `diy.${diyIndex}.enabled`, diy.enabled !== false, "勾選＝顯示；取消勾選＝下架，原資料會保留。", true);
+  addRow("DIY", item, `diy.${diyIndex}.name`, diy.name, "DIY 對外顯示名稱。啟用前必須填寫。", false);
+  addRow("DIY", item, `diy.${diyIndex}.price`, diy.price, "價格與單位需一起填寫；啟用前必須填寫。", false);
+  addRow("DIY", item, `diy.${diyIndex}.tag`, diy.tag, "時長目前仍有待拍板資料，不可自行猜測。", false);
+  addRow("DIY", item, `diy.${diyIndex}.group`, diy.group, "成團人數尚待拍板；修改前先確認最終數字。", false);
+  addRow("DIY", item, `diy.${diyIndex}.image`, diy.image, "完整圖片網址，需以 https:// 開頭；啟用前必須填寫。", false);
 });
 
 data.qa.infoIcons.forEach((info, infoIndex) => {
@@ -100,9 +100,9 @@ data.qa.categories.forEach((category, categoryIndex) => {
       addRow("FAQ", item, `qa.categories.${categoryIndex}.list.${faqIndex}.a`, faq.a, "使用繁體中文與全形標點；請保留必要的 HTML 標記。", true);
     }
     (faq.rows || []).forEach((tableRow, rowIndex) => {
-      addRow("FAQ 表格", item, `qa.categories.${categoryIndex}.list.${faqIndex}.rows.${rowIndex}.label`, tableRow.label, "表格左欄標籤。", true);
-      addRow("FAQ 表格", item, `qa.categories.${categoryIndex}.list.${faqIndex}.rows.${rowIndex}.value`, tableRow.value, "表格主要內容。", true);
-      addRow("FAQ 表格", item, `qa.categories.${categoryIndex}.list.${faqIndex}.rows.${rowIndex}.note`, tableRow.note, "補充說明；沒有內容可留空。", false);
+      addRow("FAQ", item, `qa.categories.${categoryIndex}.list.${faqIndex}.rows.${rowIndex}.label`, tableRow.label, "表格左欄標籤。", true);
+      addRow("FAQ", item, `qa.categories.${categoryIndex}.list.${faqIndex}.rows.${rowIndex}.value`, tableRow.value, "表格主要內容。", true);
+      addRow("FAQ", item, `qa.categories.${categoryIndex}.list.${faqIndex}.rows.${rowIndex}.note`, tableRow.note, "補充說明；沒有內容可留空。", false);
     });
   });
 });
@@ -111,6 +111,7 @@ const isMain = process.argv[1]
   && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMain) {
+const { SpreadsheetFile, Workbook } = await import("@oai/artifact-tool");
 const workbook = Workbook.create();
 const guideSheet = workbook.worksheets.add("操作說明");
 const contentSheet = workbook.worksheets.add("內容資料");

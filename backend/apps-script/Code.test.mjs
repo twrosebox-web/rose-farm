@@ -6,6 +6,12 @@ const sheetRows = [
   ["區塊", "項目", "key", "目前值", "類型", "必填", "填寫說明", "updatedAt", "啟用"],
   ["票價", "全票", "siteConfig.ticket.full", 200, "number", "是", "只填數字", "2026-07-17T00:00:00.000Z", true],
   ["公告", "公告內容", "siteConfig.announcement.text", "", "string", "否", "可留空", "2026-07-17T00:00:00.000Z", true],
+  ["DIY", "DIY 項目 5", "diy.4.enabled", false, "boolean", "是", "", "2026-07-17T00:00:00.000Z", true],
+  ["DIY", "DIY 項目 5", "diy.4.name", "", "string", "否", "", "2026-07-17T00:00:00.000Z", true],
+  ["DIY", "DIY 項目 5", "diy.4.price", "", "string", "否", "", "2026-07-17T00:00:00.000Z", true],
+  ["DIY", "DIY 項目 5", "diy.4.tag", "", "string", "否", "", "2026-07-17T00:00:00.000Z", true],
+  ["DIY", "DIY 項目 5", "diy.4.group", "", "string", "否", "", "2026-07-17T00:00:00.000Z", true],
+  ["DIY", "DIY 項目 5", "diy.4.image", "", "string", "否", "", "2026-07-17T00:00:00.000Z", true],
 ];
 
 const cacheStore = new Map();
@@ -28,7 +34,7 @@ function makeRange(row, column, rowCount = 1, columnCount = 1) {
 }
 
 const sheet = {
-  getLastRow: () => 5,
+  getLastRow: () => sheetRows.length + 3,
   getRange: makeRange,
 };
 
@@ -90,9 +96,22 @@ assert.equal(context.coerceValue_("250", "number"), 250);
 assert.equal(context.coerceValue_("false", "boolean"), false);
 assert.equal(context.valuesEqual_(200, 200), true);
 assert.equal(context.valuesEqual_("200", 200), false);
+assert.throws(() => context.validateDiyGroups_([
+  ["DIY", "DIY 項目 5", "diy.4.enabled", true, "boolean", "是", "", "", true],
+  ["DIY", "DIY 項目 5", "diy.4.name", "新增項目", "string", "否", "", "", true],
+  ["DIY", "DIY 項目 5", "diy.4.price", "", "string", "否", "", "", true],
+]), /啟用前/);
+assert.doesNotThrow(() => context.validateDiyGroups_([
+  ["DIY", "DIY 項目 5", "diy.4.enabled", false, "boolean", "是", "", "", true],
+  ["DIY", "DIY 項目 5", "diy.4.name", "", "string", "否", "", "", true],
+]));
 assert.equal(
   context.makeEditorLabel_({ item: "玫瑰花醬DIY", key: "diy.0.price" }),
-  "玫瑰花醬DIY｜價格",
+  "價格",
+);
+assert.equal(
+  context.makeEditorLabel_({ item: "入園與票務／第 2 題", key: "qa.categories.0.list.1.rows.0.value" }),
+  "入園與票務／第 2 題｜💬 答案內容・第 1 列・內容",
 );
 assert.equal(context.rangeContainsCell_({
   getRow: () => 5,
@@ -142,5 +161,18 @@ const blankRequiredNumber = context.doPost({
 });
 assert.equal(JSON.parse(blankRequiredNumber.text).ok, false);
 assert.equal(sheetRows[1][3], 250);
+
+const incompleteDiyPost = context.doPost({
+  postData: {
+    contents: JSON.stringify({
+      passcode: "secret",
+      key: "diy.4.enabled",
+      value: true,
+    }),
+  },
+});
+assert.equal(JSON.parse(incompleteDiyPost.text).ok, false);
+assert.match(JSON.parse(incompleteDiyPost.text).error, /啟用前/);
+assert.equal(sheetRows[3][3], false);
 
 console.log("Apps Script tests passed");

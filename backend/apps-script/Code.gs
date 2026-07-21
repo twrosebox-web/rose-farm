@@ -219,6 +219,13 @@ function publishBatchEditor_(spreadsheetOverride) {
     const contentRows = contentSheet
       .getRange(BACKEND.dataStartRow, 1, contentRowCount, BACKEND.columns.active)
       .getValues();
+    const contentByKey = new Map();
+    contentRows.forEach((row) => {
+      const key = String(row[BACKEND.columns.key - 1] || '').trim();
+      if (!key) return;
+      if (contentByKey.has(key)) throw new Error(`內容資料出現重複 key：${key}`);
+      contentByKey.set(key, row);
+    });
 
     const editorRowCount = editor.getLastRow() - EDITOR.dataStartRow + 1;
     const editorRows = editor
@@ -235,21 +242,13 @@ function publishBatchEditor_(spreadsheetOverride) {
     editorRows.forEach((editorRow) => {
       const rawValue = editorRow[EDITOR.columns.value - EDITOR.columns.value];
       const key = String(editorRow[EDITOR.columns.key - EDITOR.columns.value] || '').trim();
-      const sourceRow = Number(editorRow[EDITOR.columns.sourceRow - EDITOR.columns.value]);
-      const type = String(editorRow[EDITOR.columns.type - EDITOR.columns.value] || 'string');
-      const required = String(editorRow[EDITOR.columns.required - EDITOR.columns.value] || '') === '是';
-      const active = editorRow[EDITOR.columns.active - EDITOR.columns.value] === true;
       if (!key) return;
+      const contentRow = contentByKey.get(key);
+      if (!contentRow) throw new Error(`內容資料找不到 key：${key}`);
+      const type = String(contentRow[BACKEND.columns.type - 1] || 'string');
+      const required = String(contentRow[BACKEND.columns.required - 1] || '') === '是';
+      const active = contentRow[BACKEND.columns.active - 1] === true;
       if (!active) throw new Error(`此項目已停用：${key}`);
-      if (!Number.isInteger(sourceRow) || sourceRow < BACKEND.dataStartRow) {
-        throw new Error(`來源資料列不合法：${key}`);
-      }
-
-      const contentIndex = sourceRow - BACKEND.dataStartRow;
-      const contentRow = contentRows[contentIndex];
-      if (!contentRow || String(contentRow[BACKEND.columns.key - 1] || '').trim() !== key) {
-        throw new Error(`資料列已變動：${key}`);
-      }
       if (required && isRawEmptyValue_(rawValue)) {
         throw new Error(`必填內容不可留空：${key}`);
       }
@@ -263,6 +262,8 @@ function publishBatchEditor_(spreadsheetOverride) {
       contentRow[BACKEND.columns.updatedAt - 1] = timestamp;
       changedCount += 1;
     });
+
+    validateDiyGroups_(contentRows);
 
     if (changedCount) {
       contentSheet.getRange(BACKEND.dataStartRow, BACKEND.columns.value, contentRowCount, 1)
@@ -285,6 +286,30 @@ function publishBatchEditor_(spreadsheetOverride) {
 
 function valuesEqual_(left, right) {
   return typeof left === typeof right && left === right;
+}
+
+function validateDiyGroups_(contentRows) {
+  const groups = new Map();
+  contentRows.forEach((row) => {
+    const key = String(row[BACKEND.columns.key - 1] || '').trim();
+    const match = key.match(/^diy\.(\d+)\.(enabled|name|price|tag|group|image)$/);
+    if (!match) return;
+    const index = Number(match[1]);
+    if (!groups.has(index)) groups.set(index, {});
+    groups.get(index)[match[2]] = row[BACKEND.columns.value - 1];
+  });
+
+  groups.forEach((group, index) => {
+    if (group.enabled !== true) return;
+    const missing = ['name', 'price', 'tag', 'group', 'image']
+      .filter((field) => isRawEmptyValue_(group[field]));
+    if (missing.length) {
+      throw new Error(`DIY 項目 ${index + 1} 啟用前，請完整填寫名稱、價格、時長、成團人數與圖片網址。`);
+    }
+    if (!/^https:\/\//i.test(String(group.image))) {
+      throw new Error(`DIY 項目 ${index + 1} 的圖片網址必須以 https:// 開頭。`);
+    }
+  });
 }
 
 function getBackendSpreadsheet_() {
@@ -322,10 +347,18 @@ function getContentRows_(spreadsheetOverride) {
 
 function makeEditorLabel_(entry) {
   const key = entry.key;
+  const diyMatch = key.match(/^diy\.(\d+)\.(enabled|name|price|tag|group|image)$/);
+  if (diyMatch) {
+    const names = {
+      enabled: '顯示此項目', name: '名稱', price: '價格', tag: '時長',
+      group: '成團人數', image: '圖片網址',
+    };
+    return names[diyMatch[2]];
+  }
   const rowsMatch = key.match(/\.rows\.(\d+)\.(label|value|note)$/);
   if (rowsMatch) {
     const names = { label: '標籤', value: '內容', note: '補充' };
-    return `${entry.item}｜表格第 ${Number(rowsMatch[1]) + 1} 列・${names[rowsMatch[2]]}`;
+    return `${entry.item}｜💬 答案內容・第 ${Number(rowsMatch[1]) + 1} 列・${names[rowsMatch[2]]}`;
   }
   const factsMatch = key.match(/\.facts\.(\d+)$/);
   if (factsMatch) return `${entry.item}｜重點 ${Number(factsMatch[1]) + 1}`;
@@ -364,7 +397,7 @@ function buildPublicPayload_() {
 
     rows.forEach((row) => {
       const key = String(row[BACKEND.columns.key - 1] || '').trim();
-      const active = row[BACKEND.columns.active - 1] !== false;
+      const active = row[BACKEND.columns.active - 1] === true;
       if (!key || !active) return;
       values[key] = coerceValue_(row[BACKEND.columns.value - 1], row[BACKEND.columns.type - 1]);
       updatedAt[key] = normalizeTimestamp_(row[BACKEND.columns.updatedAt - 1]);
@@ -408,7 +441,7 @@ function updateRows_(updates) {
       if (!isValidKey_(key)) throw new Error(`key 格式不合法：${key}`);
       const found = rowByKey.get(key);
       if (!found) throw new Error(`找不到 key：${key}`);
-      if (found.row[BACKEND.columns.active - 1] === false) {
+      if (found.row[BACKEND.columns.active - 1] !== true) {
         throw new Error(`此欄位已停用：${key}`);
       }
 
@@ -423,6 +456,11 @@ function updateRows_(updates) {
       }
       return { key, value, sheetRow: found.sheetRow };
     });
+
+    prepared.forEach((entry) => {
+      rowByKey.get(entry.key).row[BACKEND.columns.value - 1] = entry.value;
+    });
+    validateDiyGroups_(rows);
 
     const results = prepared.map((entry) => {
       const timestamp = new Date().toISOString();

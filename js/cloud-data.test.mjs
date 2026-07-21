@@ -42,12 +42,16 @@ windowObject.roseFarmCloudCallback({
   ok: true,
   values: {
     "siteConfig.ticket.full": 250,
+    "diy.4.enabled": false,
+    "diy.4.name": "新增 DIY",
     "__proto__.polluted": true,
   },
   updatedAt: { "siteConfig.ticket.full": "2026-07-17T00:00:00.000Z" },
 });
 
 assert.equal(windowObject.DATA.siteConfig.ticket.full, 250);
+assert.equal(windowObject.DATA.diy[4].enabled, false);
+assert.equal(windowObject.DATA.diy[4].name, "新增 DIY");
 assert.equal({}.polluted, undefined);
 assert.equal(document.documentElement.dataset.cloudData, "loaded");
 

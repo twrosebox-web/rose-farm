@@ -1,4 +1,6 @@
 import { rows as contentRows } from './build-sheet-template.mjs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const controlId = 15049093;
 const contentId = 895957080;
@@ -71,14 +73,28 @@ const fieldNames = {
 };
 
 function makeLabel(item, key) {
+  const diyMatch = key.match(/^diy\.(\d+)\.(enabled|name|price|tag|group|image)$/);
+  if (diyMatch) {
+    const names = {
+      enabled: '顯示此項目',
+      name: '名稱',
+      price: '價格',
+      tag: '時長',
+      group: '成團人數',
+      image: '圖片網址',
+    };
+    return names[diyMatch[2]];
+  }
   const rowsMatch = key.match(/\.rows\.(\d+)\.(label|value|note)$/);
   if (rowsMatch) {
     const names = { label: '左欄', value: '內容', note: '補充' };
-    return `${item}｜表格第 ${Number(rowsMatch[1]) + 1} 列・${names[rowsMatch[2]]}`;
+    return `${item}｜💬 答案內容・第 ${Number(rowsMatch[1]) + 1} 列・${names[rowsMatch[2]]}`;
   }
   const factsMatch = key.match(/\.facts\.(\d+)$/);
   if (factsMatch) return `${item}｜重點 ${Number(factsMatch[1]) + 1}`;
   const field = key.split('.').pop();
+  if (field === 'q') return `${item}｜❓ 問題`;
+  if (field === 'a') return `${item}｜💬 答案`;
   return `${item}｜${fieldNames[field] || field}`;
 }
 
@@ -88,6 +104,7 @@ contentRows.forEach((row, index) => {
   if (!sections.has(section)) sections.set(section, []);
   sections.get(section).push({
     section,
+    item,
     label: makeLabel(item, key),
     key,
     value,
@@ -111,31 +128,67 @@ const sectionRows = [];
 const fieldRows = [];
 const numberRows = [];
 const booleanRows = [];
+const diyItemHeaderRows = [];
+const questionRows = [];
+const answerRows = [];
+
+function pushEntry(entry) {
+  const rowNumber = outputRows.length + 1;
+  fieldRows.push(rowNumber);
+  if (entry.type === 'number') numberRows.push(rowNumber);
+  if (entry.type === 'boolean') booleanRows.push(rowNumber);
+  if (/\.q$/.test(entry.key)) questionRows.push(rowNumber);
+  if (/\.a$/.test(entry.key) || /\.rows\.\d+\.(label|value|note)$/.test(entry.key)) {
+    answerRows.push(rowNumber);
+  }
+  outputRows.push([
+    cellData(entry.label),
+    cellData(entry.value, entry.guidance),
+    cellData(entry.key),
+    cellData(entry.sourceRow),
+    cellData(entry.type),
+    cellData(entry.required),
+    cellData(entry.active),
+  ]);
+}
 
 sections.forEach((entries, section) => {
   const sheetRow = outputRows.length + 1;
   sectionRows.push(sheetRow);
   outputRows.push([cellData(section)]);
+  if (section !== 'DIY') {
+    entries.forEach(pushEntry);
+    return;
+  }
+
+  const fieldOrder = { enabled: 0, name: 1, price: 2, tag: 3, group: 4, image: 5 };
+  const itemGroups = new Map();
   entries.forEach((entry) => {
-    const rowNumber = outputRows.length + 1;
-    fieldRows.push(rowNumber);
-    if (entry.type === 'number') numberRows.push(rowNumber);
-    if (entry.type === 'boolean') booleanRows.push(rowNumber);
-    outputRows.push([
-      cellData(entry.label),
-      cellData(entry.value, entry.guidance),
-      cellData(entry.key),
-      cellData(entry.sourceRow),
-      cellData(entry.type),
-      cellData(entry.required),
-      cellData(entry.active),
-    ]);
+    const match = entry.key.match(/^diy\.(\d+)\.(enabled|name|price|tag|group|image)$/);
+    if (!match) return;
+    const index = Number(match[1]);
+    if (!itemGroups.has(index)) itemGroups.set(index, []);
+    itemGroups.get(index).push({ ...entry, diyField: match[2] });
+  });
+
+  [...itemGroups.keys()].sort((left, right) => left - right).forEach((index) => {
+    const itemEntries = itemGroups.get(index)
+      .sort((left, right) => fieldOrder[left.diyField] - fieldOrder[right.diyField]);
+    const nameEntry = itemEntries.find((entry) => entry.diyField === 'name');
+    const enabledEntry = itemEntries.find((entry) => entry.diyField === 'enabled');
+    const name = String((nameEntry && nameEntry.value) || '').trim();
+    const enabled = !enabledEntry || enabledEntry.value !== false;
+    const headerRow = outputRows.length + 1;
+    diyItemHeaderRows.push(headerRow);
+    outputRows.push([cellData(
+      `DIY 項目 ${index + 1}｜${name || '可新增空白項目'}${enabled ? '' : '（未顯示）'}`,
+    )]);
+    itemEntries.forEach(pushEntry);
   });
 });
 
 const totalRows = outputRows.length;
 const gridRows = Math.max(220, totalRows + 10);
-const dataRange = editorRange(firstDataRow - 1, totalRows, 0, 7);
 const valueRange = editorRange(firstDataRow - 1, totalRows, 1, 2);
 
 const requests = [
@@ -156,9 +209,11 @@ const requests = [
   },
   {
     unmergeCells: {
-      range: editorRange(0, 40, 0, 8),
+      range: editorRange(0, gridRows, 0, 8),
     },
   },
+  { deleteConditionalFormatRule: { sheetId: editorId, index: 0 } },
+  { deleteConditionalFormatRule: { sheetId: editorId, index: 0 } },
   {
     repeatCell: {
       range: editorRange(0, gridRows, 0, 8),
@@ -168,6 +223,7 @@ const requests = [
   },
   merge(0, 2, 0, 2),
   ...sectionRows.map((row) => merge(row - 1, row, 0, 2)),
+  ...diyItemHeaderRows.map((row) => merge(row - 1, row, 0, 2)),
   {
     updateCells: {
       range: editorRange(0, totalRows, 0, 7),
@@ -255,6 +311,38 @@ const requests = [
       },
     },
     'backgroundColorStyle,textFormat',
+  )),
+  ...diyItemHeaderRows.map((row) => format(
+    editorRange(row - 1, row, 0, 2),
+    {
+      backgroundColorStyle: { rgbColor: rgb('#6f8d72') },
+      textFormat: {
+        fontFamily: 'Noto Sans TC',
+        fontSize: 11,
+        bold: true,
+        foregroundColorStyle: { rgbColor: rgb('#ffffff') },
+      },
+    },
+    'backgroundColorStyle,textFormat',
+  )),
+  ...questionRows.map((row) => format(
+    editorRange(row - 1, row, 0, 2),
+    {
+      backgroundColorStyle: { rgbColor: rgb('#e6f2e8') },
+      textFormat: { bold: true, foregroundColorStyle: { rgbColor: rgb('#244b2b') } },
+      borders: { top: { style: 'SOLID_MEDIUM', colorStyle: { rgbColor: rgb('#8ba888') } } },
+    },
+    'backgroundColorStyle,textFormat,borders',
+  )),
+  ...answerRows.map((row) => format(
+    editorRange(row - 1, row, 0, 2),
+    {
+      backgroundColorStyle: { rgbColor: rgb('#fff4cf') },
+      verticalAlignment: 'TOP',
+      textFormat: { foregroundColorStyle: { rgbColor: rgb('#6b4b35') } },
+      borders: { bottom: { style: 'SOLID_MEDIUM', colorStyle: { rgbColor: rgb('#decf9a') } } },
+    },
+    'backgroundColorStyle,verticalAlignment,textFormat,borders',
   )),
   {
     setDataValidation: {
@@ -348,13 +436,6 @@ const requests = [
       fields: 'pixelSize',
     },
   })),
-  ...sectionRows.map((row) => ({
-    updateDimensionProperties: {
-      range: { sheetId: editorId, dimension: 'ROWS', startIndex: row - 1, endIndex: row },
-      properties: { pixelSize: 34 },
-      fields: 'pixelSize',
-    },
-  })),
   {
     updateDimensionProperties: {
       range: { sheetId: editorId, dimension: 'ROWS', startIndex: firstDataRow - 1, endIndex: totalRows },
@@ -362,6 +443,34 @@ const requests = [
       fields: 'pixelSize',
     },
   },
+  ...sectionRows.map((row) => ({
+    updateDimensionProperties: {
+      range: { sheetId: editorId, dimension: 'ROWS', startIndex: row - 1, endIndex: row },
+      properties: { pixelSize: 34 },
+      fields: 'pixelSize',
+    },
+  })),
+  ...diyItemHeaderRows.map((row) => ({
+    updateDimensionProperties: {
+      range: { sheetId: editorId, dimension: 'ROWS', startIndex: row - 1, endIndex: row },
+      properties: { pixelSize: 34 },
+      fields: 'pixelSize',
+    },
+  })),
+  ...questionRows.map((row) => ({
+    updateDimensionProperties: {
+      range: { sheetId: editorId, dimension: 'ROWS', startIndex: row - 1, endIndex: row },
+      properties: { pixelSize: 46 },
+      fields: 'pixelSize',
+    },
+  })),
+  ...answerRows.map((row) => ({
+    updateDimensionProperties: {
+      range: { sheetId: editorId, dimension: 'ROWS', startIndex: row - 1, endIndex: row },
+      properties: { pixelSize: 76 },
+      fields: 'pixelSize',
+    },
+  })),
   {
     updateSheetProperties: {
       properties: { sheetId: contentId, hidden: true },
@@ -413,12 +522,16 @@ if (totalRows < 100 || contentRows.length < 100) {
 const badRequests = requests.filter((request) => Object.keys(request).length !== 1);
 if (badRequests.length) throw new Error('Batch request preflight failed.');
 
-console.log(JSON.stringify({
-  requests,
-  summary: {
-    contentRows: contentRows.length,
-    sections: sections.size,
-    totalRows,
-    firstDataRow,
-  },
-}));
+const summary = {
+  contentRows: contentRows.length,
+  sections: sections.size,
+  totalRows,
+  firstDataRow,
+};
+
+const isMain = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMain) console.log(JSON.stringify({ requests, summary }));
+
+export { requests, summary };
