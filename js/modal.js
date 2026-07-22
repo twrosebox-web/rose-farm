@@ -146,12 +146,35 @@
         document.body.style.overflow = 'hidden';
     };
 
-    // 鍵盤：ESC / 左右鍵
+    // === 遮罩雙重確認關閉（mousedown + mouseup 都落在遮罩上才關）===
+    // 防止使用者在 modal / lightbox 內反白文字、拖曳到遮罩上放開時誤關。
+    function bindBackdropClose(el, closeFn) {
+        if (!el) return;
+        var downOnBackdrop = false;
+        el.addEventListener('mousedown', function(e) {
+            downOnBackdrop = (e.target === el);
+        });
+        el.addEventListener('mouseup', function(e) {
+            if (downOnBackdrop && e.target === el) closeFn();
+            downOnBackdrop = false;
+        });
+    }
+    bindBackdropClose(document.getElementById('modal-backdrop'), window.closeModal);
+    bindBackdropClose(document.getElementById('lightbox'), window.closeLightbox);
+
+    // 鍵盤：ESC 關閉任一 overlay（lightbox 優先），左右鍵切換 modal 圖片
     document.addEventListener('keydown', function(e) {
+        var lb = document.getElementById('lightbox');
         var bd = document.getElementById('modal-backdrop');
-        if (!bd || bd.classList.contains('hidden')) return;
-        if (e.key === 'Escape') window.closeModal();
-        else if (e.key === 'ArrowLeft') window.changeModalImage(-1);
+        var lbOpen = lb && !lb.classList.contains('hidden');
+        var bdOpen = bd && !bd.classList.contains('hidden');
+        if (e.key === 'Escape') {
+            if (lbOpen) window.closeLightbox();
+            else if (bdOpen) window.closeModal();
+            return;
+        }
+        if (!bdOpen) return;
+        if (e.key === 'ArrowLeft') window.changeModalImage(-1);
         else if (e.key === 'ArrowRight') window.changeModalImage(1);
     });
 
