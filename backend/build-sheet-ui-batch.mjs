@@ -1,5 +1,6 @@
 const controlId = 15049093;
 const contentId = 895957080;
+const contentEndRow = 711;
 
 const color = (hex) => {
   const value = hex.replace("#", "");
@@ -55,7 +56,7 @@ setText(10, 5, "待連線\nApps Script");
 setText(14, 1, "重要提醒");
 setText(15, 1, "品牌紅線：農場只能寫「自然農法」。出現「有機／Organic」時，必須先交由 Shao 核決。");
 setText(16, 1, "DIY 時長與成團人數尚未統一，沒有最終數字前不可自行修改。");
-setFormula(18, 1, '=HYPERLINK("#gid=895957080&range=A1:D174","▶ 開始編輯內容")');
+setFormula(18, 1, `=HYPERLINK("#gid=${contentId}&range=A1:D${contentEndRow}","▶ 開始編輯內容")`);
 setText(18, 4, "找不到「擴充功能」？\n點右上角小箭頭，或按 Ctrl + Shift + F");
 
 const baseText = {
@@ -182,23 +183,23 @@ const requests = [
     horizontalAlignment: "CENTER",
     textFormat: { fontFamily: "Noto Sans TC", fontSize: 11, bold: true, foregroundColorStyle: { rgbColor: color("#FFFFFF") } },
   }, "backgroundColorStyle,horizontalAlignment,textFormat"),
-  format(range(contentId, 3, 174, 0, 2), {
+  format(range(contentId, 3, contentEndRow, 0, 2), {
     backgroundColorStyle: { rgbColor: color("#FFFFFF") },
     textFormat: baseText,
     verticalAlignment: "TOP",
     wrapStrategy: "WRAP",
   }, "backgroundColorStyle,textFormat,verticalAlignment,wrapStrategy"),
-  format(range(contentId, 3, 174, 3, 4), {
+  format(range(contentId, 3, contentEndRow, 3, 4), {
     backgroundColorStyle: { rgbColor: color("#FFF8DC") },
     textFormat: { fontFamily: "Noto Sans TC", fontSize: 11, bold: true, foregroundColorStyle: { rgbColor: color("#3A5A40") } },
     verticalAlignment: "TOP",
     wrapStrategy: "WRAP",
   }, "backgroundColorStyle,textFormat,verticalAlignment,wrapStrategy"),
-  format(range(contentId, 3, 174, 2, 3), {
+  format(range(contentId, 3, contentEndRow, 2, 3), {
     backgroundColorStyle: { rgbColor: color("#F1F3F4") },
     textFormat: { fontFamily: "Roboto Mono", fontSize: 9, foregroundColorStyle: { rgbColor: color("#7A827B") } },
   }, "backgroundColorStyle,textFormat"),
-  format(range(contentId, 3, 174, 4, 9), {
+  format(range(contentId, 3, contentEndRow, 4, 9), {
     backgroundColorStyle: { rgbColor: color("#F5F6F5") },
     textFormat: { fontFamily: "Noto Sans TC", fontSize: 9, foregroundColorStyle: { rgbColor: color("#808780") } },
   }, "backgroundColorStyle,textFormat"),
@@ -214,22 +215,22 @@ const requests = [
   dimension(contentId, "COLUMNS", 3, 4, { pixelSize: 440 }, "pixelSize"),
   dimension(contentId, "COLUMNS", 2, 3, { hiddenByUser: true }, "hiddenByUser"),
   dimension(contentId, "COLUMNS", 4, 9, { hiddenByUser: true }, "hiddenByUser"),
-  dimension(contentId, "ROWS", 3, 174, { pixelSize: 38 }, "pixelSize"),
+  dimension(contentId, "ROWS", 3, contentEndRow, { pixelSize: 38 }, "pixelSize"),
   {
     addProtectedRange: {
-      protectedRange: { range: range(contentId, 3, 174, 2, 3), description: "系統欄位：key", warningOnly: true },
+      protectedRange: { range: range(contentId, 3, contentEndRow, 2, 3), description: "系統欄位：key", warningOnly: true },
     },
   },
   {
     addProtectedRange: {
-      protectedRange: { range: range(contentId, 3, 174, 4, 9), description: "系統欄位：類型、說明、updatedAt 與啟用狀態", warningOnly: true },
+      protectedRange: { range: range(contentId, 3, contentEndRow, 4, 9), description: "系統欄位：類型、說明、updatedAt 與啟用狀態", warningOnly: true },
     },
   },
   {
     addConditionalFormatRule: {
       index: 0,
       rule: {
-        ranges: [range(contentId, 3, 174, 3, 4)],
+        ranges: [range(contentId, 3, contentEndRow, 3, 4)],
         booleanRule: {
           condition: { type: "CUSTOM_FORMULA", values: [{ userEnteredValue: '=AND($F4="是",$D4="")' }] },
           format: {

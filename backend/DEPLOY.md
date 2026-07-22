@@ -2,7 +2,7 @@
 
 ## 1. 開啟內容資料表
 
-[大花農場內容後台](https://docs.google.com/spreadsheets/d/16cH2RYwjp0egiijK0AxZh7sNC4yUfjSNZchC57jf7N8/edit)
+[大花農場內容後台](https://docs.google.com/spreadsheets/d/1yQM7xcbUMuT4B78wNBVDCu15-_nqNn9bXOmU3chREz8/edit)
 
 ## 2. 建立 Apps Script
 

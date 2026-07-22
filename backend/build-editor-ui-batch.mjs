@@ -589,7 +589,7 @@ const requests = [
   {
     updateCells: {
       range: { sheetId: controlId, startRowIndex: 9, endRowIndex: 10, startColumnIndex: 4, endColumnIndex: 5 },
-      rows: [{ values: [{ userEnteredValue: { stringValue: '已安裝\nApps Script' } }] }],
+      rows: [{ values: [{ userEnteredValue: { stringValue: '待安裝\nApps Script' } }] }],
       fields: 'userEnteredValue',
     },
   },

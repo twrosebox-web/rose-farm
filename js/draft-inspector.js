@@ -3,7 +3,7 @@
    只在 Apps Script 草稿預覽模式啟用，不影響正式網站訪客。
    ============================================ */
 (function() {
-    var SPREADSHEET_ID = '16cH2RYwjp0egiijK0AxZh7sNC4yUfjSNZchC57jf7N8';
+    var SPREADSHEET_ID = '1yQM7xcbUMuT4B78wNBVDCu15-_nqNn9bXOmU3chREz8';
     var DEFAULT_EDITOR_SHEET_ID = 2026072101;
     var editorRows = {};
     var editorSheetId = DEFAULT_EDITOR_SHEET_ID;
