@@ -143,6 +143,11 @@ assert.equal(taskList.items.length, 1);
 assert.equal(taskList.items[0].key, "food.0.image");
 assert.equal(image.classList.contains("draft-task-selected"), true);
 assert.equal(image.dataset.draftTaskNumber, "1");
+assert.equal(elements.get("draft-task-counter").textContent, "已選 1 張");
+elements.get("draft-task-counter").on_click();
+assert.equal(elements.get("draft-task-panel").classList.contains("is-open"), true);
+assert.equal(elements.get("draft-task-start").href, "admin.html?tour=1");
+assert.match(elements.get("draft-task-start").textContent, /（1）/);
 
 listeners.click({
   target: image,
