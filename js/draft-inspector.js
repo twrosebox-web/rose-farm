@@ -217,6 +217,17 @@
 
     function renderTaskModeButton() {
         if (!taskModeButton) return;
+        var available = taskStore && typeof taskStore.available === 'function' && taskStore.available();
+        taskModeButton.disabled = !available;
+        if (!available) {
+            selectionMode = false;
+            document.documentElement.dataset.draftTaskMode = 'false';
+            taskModeButton.textContent = '清單功能不可用｜仍可單張修改';
+            taskModeButton.setAttribute('aria-pressed', 'false');
+            taskModeButton.setAttribute('title', '瀏覽器未開放本機儲存，點圖片仍可使用單張後台定位。');
+            if (taskCounterButton) taskCounterButton.textContent = '已選 0 張';
+            return;
+        }
         var count = taskList().items.length;
         taskModeButton.textContent = selectionMode
             ? '✓ 清單模式中（已選 ' + count + ' 張）'
@@ -366,17 +377,27 @@
     }
 
     function setSelectionMode(enabled) {
+        if (!taskStore || typeof taskStore.available !== 'function' || !taskStore.available()) {
+            selectionMode = false;
+            renderTaskModeButton();
+            return false;
+        }
         selectionMode = !!enabled;
         document.documentElement.dataset.draftTaskMode = selectionMode ? 'true' : 'false';
         if (panel) panel.classList.remove('is-open');
         if (tooltip) tooltip.style.display = 'none';
         syncSelectedImages();
+        return true;
     }
 
     function toggleTaskForImage(image) {
         if (!taskStore || typeof taskStore.toggle !== 'function') return false;
         var result = taskStore.toggle(imageTask(image));
-        if (!result.ok) return false;
+        if (!result.ok) {
+            setSelectionMode(false);
+            openPanel(image);
+            return false;
+        }
         syncSelectedImages();
         return true;
     }

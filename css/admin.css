@@ -230,6 +230,8 @@ button { cursor: pointer; }
 .image-task-tour-body { display: grid; gap: 10px; padding: 14px 16px; }
 .image-task-tour-preview { width: 100%; height: 142px; display: grid; place-items: center; overflow: hidden; border-radius: 13px; color: var(--muted); background: #e9eee9; font-size: 12px; }
 .image-task-tour-preview img { width: 100%; height: 100%; object-fit: cover; }
+.image-task-tour-preview.summary { height: 94px; color: white; background: var(--forest); }
+.image-task-tour-preview.summary span { width: 52px; height: 52px; display: grid; place-items: center; border: 3px solid white; border-radius: 50%; font-size: 28px; font-weight: 900; }
 .image-task-tour-location { margin: 0; padding: 9px 10px; border-left: 3px solid var(--gold); border-radius: 0 9px 9px 0; color: #675b41; background: #fff8e5; font-size: 12px; line-height: 1.55; }
 .image-task-tour-hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
 .image-task-tour-error { margin: 0; padding: 9px 10px; border-radius: 9px; color: var(--danger); background: var(--rose-soft); font-size: 12px; line-height: 1.55; }

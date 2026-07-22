@@ -51,7 +51,7 @@
     var state = {
         entries: [], entryByKey: new Map(), official: {}, originalDraft: {}, current: {}, dirty: new Set(),
         passcode: '', connected: false, demo: false, activeSection: 'all', query: '', dirtyOnly: false,
-        faqCategory: '0', imageCategory: 'hero', pendingConfirm: null, toastTimer: null,
+        faqCategory: '0', imageCategory: 'hero', pendingConfirm: null, pendingCancel: null, toastTimer: null,
         taskTourActive: false, taskTourIndex: 0
     };
     var lastFocusedElement = null;
@@ -790,6 +790,7 @@
         postAction('publish_draft', { brandConfirmed: !!brandConfirmed }).then(function (payload) {
             state.entries.forEach(function (entry) { state.official[entry.key] = state.current[entry.key]; entry.value = state.current[entry.key]; });
             renderContent(); showToast(payload.message || ('已發布 ' + payload.publishedCount + ' 項內容。'));
+            offerTaskListClearAfterPublish();
         }).catch(function (error) { showToast(error.message, true); })
             .finally(function () { setBusy(byId('publish-button'), false, '✅ 發布全部'); });
     }
@@ -803,10 +804,12 @@
     function openConfirm(options) {
         lastFocusedElement = document.activeElement;
         state.pendingConfirm = options.onConfirm;
+        state.pendingCancel = options.onCancel || null;
         byId('confirm-icon').textContent = options.icon || '⚠️';
         byId('confirm-title').textContent = options.title || '請再次確認';
         byId('confirm-message').textContent = options.message || '';
         byId('confirm-action').textContent = options.confirmLabel || '確定';
+        byId('confirm-cancel').textContent = options.cancelLabel || '取消';
         byId('brand-confirm-row').classList.toggle('hidden', !options.brand);
         byId('brand-confirm-checkbox').checked = false;
         byId('confirm-modal').classList.remove('hidden');
@@ -816,6 +819,7 @@
 
     function closeConfirm() {
         state.pendingConfirm = null;
+        state.pendingCancel = null;
         byId('confirm-modal').classList.add('hidden');
         byId('admin-app').inert = false;
         if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
@@ -838,6 +842,12 @@
         var requiresBrand = !byId('brand-confirm-row').classList.contains('hidden');
         if (requiresBrand && !byId('brand-confirm-checkbox').checked) { showToast('請先勾選已完成品牌用語核決。', true); return; }
         var action = state.pendingConfirm; closeConfirm(); if (action) action();
+    }
+
+    function cancelConfirm() {
+        var action = state.pendingCancel;
+        closeConfirm();
+        if (action) action();
     }
 
     function showToast(message, error) {
@@ -966,12 +976,15 @@
         byId('image-task-tour-progress').textContent = '修改清單導覽　第 ' + (state.taskTourIndex + 1) + ' / ' + list.items.length + ' 項';
         byId('image-task-tour-title').textContent = item.label;
         byId('image-task-tour-location').textContent = '網站位置：' + (entry ? imageLocationHint(item.key) : item.locationHint);
+        byId('image-task-tour-hint').textContent = '貼上新的圖片網址（https:// 開頭），改完按「完成這項」。';
         var preview = byId('image-task-tour-preview');
+        preview.classList.remove('summary');
         var value = entry ? state.current[item.key] : '';
         preview.innerHTML = isSafeImageUrl(value) ? '<img src="' + escapeAttr(value) + '" alt="目前圖片預覽">' : '<span>目前沒有可預覽的圖片</span>';
         byId('image-task-tour-error').textContent = invalid ? '此欄位已不存在，可能已改版。可「略過」或「從清單移除」。' : '';
         byId('image-task-tour-error').classList.toggle('hidden', !invalid);
         byId('image-task-tour-remove').classList.toggle('hidden', !invalid);
+        ['image-task-tour-prev', 'image-task-tour-done', 'image-task-tour-skip', 'image-task-tour-next'].forEach(function (id) { byId(id).classList.remove('hidden'); });
         byId('image-task-tour-done').disabled = invalid;
         byId('image-task-tour-prev').disabled = state.taskTourIndex === 0;
         byId('image-task-tour-next').disabled = state.taskTourIndex === list.items.length - 1;
@@ -993,7 +1006,8 @@
         if (!store || !store.available() || !list.items.length) return false;
         state.taskTourActive = true;
         var pendingIndex = store.nextPendingIndex(list, 0);
-        showImageTaskTourIndex(pendingIndex >= 0 ? pendingIndex : 0);
+        if (pendingIndex < 0) showImageTaskSummary();
+        else showImageTaskTourIndex(pendingIndex);
         return true;
     }
 
@@ -1016,8 +1030,7 @@
         list = currentTaskList();
         var next = store.nextPendingIndex(list, state.taskTourIndex + 1);
         if (next < 0) {
-            leaveImageTaskTour();
-            showToast('修改清單已走完；接著可儲存草稿並預覽。');
+            showImageTaskSummary();
             return;
         }
         showImageTaskTourIndex(next);
@@ -1035,7 +1048,68 @@
     }
 
     function maybeStartImageTaskTour() {
-        if (tourRequested()) startImageTaskTour();
+        var store = imageTaskStore();
+        if (!store || !store.available()) return;
+        var list = store.load();
+        if (!list.items.length) return;
+        var summary = store.summary(list);
+        if (store.isStale(list)) {
+            openConfirm({
+                icon: '🗂️',
+                title: '這份修改清單已超過 24 小時',
+                message: '你可以繼續使用，或清除舊清單後重新挑選圖片。',
+                confirmLabel: '繼續使用',
+                cancelLabel: '清除清單',
+                onConfirm: startImageTaskTour,
+                onCancel: function () { store.clear(); leaveImageTaskTour(); showToast('舊修改清單已清除。'); }
+            });
+            return;
+        }
+        if (tourRequested()) { startImageTaskTour(); return; }
+        if (summary.pending > 0) {
+            openConfirm({
+                icon: '🗂️',
+                title: '偵測到未完成的修改清單',
+                message: '還有 ' + summary.pending + ' 項圖片待處理，要接著完成嗎？',
+                confirmLabel: '繼續導覽',
+                cancelLabel: '現在不要',
+                onConfirm: startImageTaskTour
+            });
+        }
+    }
+
+    function showImageTaskSummary() {
+        var store = imageTaskStore();
+        var list = currentTaskList();
+        if (!store || !list.items.length) { leaveImageTaskTour(); return; }
+        var counts = store.summary(list);
+        state.taskTourActive = true;
+        byId('image-task-tour-progress').textContent = '修改清單導覽';
+        byId('image-task-tour-title').textContent = '導覽完成';
+        var preview = byId('image-task-tour-preview');
+        preview.classList.add('summary');
+        preview.innerHTML = '<span aria-hidden="true">✓</span>';
+        byId('image-task-tour-location').textContent = '完成 ' + counts.done + ' 項、略過 ' + counts.skipped + ' 項（共 ' + counts.total + ' 項）。';
+        byId('image-task-tour-hint').textContent = '接著可儲存草稿、開啟草稿預覽並發布；導覽不會自動寫入或發布。';
+        byId('image-task-tour-error').classList.add('hidden');
+        ['image-task-tour-prev', 'image-task-tour-done', 'image-task-tour-skip', 'image-task-tour-next', 'image-task-tour-remove'].forEach(function (id) { byId(id).classList.add('hidden'); });
+        setTourVisible(true);
+    }
+
+    function offerTaskListClearAfterPublish() {
+        var store = imageTaskStore();
+        if (!store || !store.available()) return;
+        var list = store.load();
+        var counts = store.summary(list);
+        if (!counts.total || counts.pending > 0) return;
+        openConfirm({
+            icon: '🧹',
+            title: '清單已完成，要清除嗎？',
+            message: '正式內容已發布。清除後，下次可以重新建立一份圖片修改清單。',
+            confirmLabel: '清除清單',
+            cancelLabel: '保留',
+            onConfirm: function () { store.clear(); leaveImageTaskTour(); showToast('圖片修改清單已清除。'); }
+        });
     }
 
     function bindEvents() {
@@ -1098,7 +1172,8 @@
             setSidebarCollapsed(!byId('admin-app').classList.contains('sidebar-collapsed'), true);
         });
         byId('confirm-action').addEventListener('click', confirmAction);
-        [byId('confirm-close'), byId('confirm-cancel')].forEach(function (button) { button.addEventListener('click', closeConfirm); });
+        byId('confirm-close').addEventListener('click', closeConfirm);
+        byId('confirm-cancel').addEventListener('click', cancelConfirm);
         byId('confirm-modal').addEventListener('mousedown', function (event) { event.currentTarget.dataset.downOnBackdrop = event.target === event.currentTarget ? '1' : '0'; });
         byId('confirm-modal').addEventListener('mouseup', function (event) { if (event.target === event.currentTarget && event.currentTarget.dataset.downOnBackdrop === '1') closeConfirm(); });
         document.addEventListener('keydown', function (event) {
@@ -1125,6 +1200,11 @@
         isSafeImageUrl: isSafeImageUrl,
         activateFieldContext: activateFieldContext,
         tourRequested: tourRequested,
+        taskListResolved: function (list) {
+            var store = imageTaskStore();
+            var counts = store ? store.summary(list) : { total: 0, pending: 0 };
+            return counts.total > 0 && counts.pending === 0;
+        },
         filterEntries: function (entries, category, query, dirtyOnly, dirtyKeys, currentValues) {
             var oldCurrent = state.current; state.current = currentValues || {};
             var result = filterEntries(entries, category, query, dirtyOnly, dirtyKeys || new Set());

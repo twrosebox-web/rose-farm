@@ -18,10 +18,17 @@ const context = {
 context.window.window = context.window;
 context.window.document = context.document;
 context.window.CSS = { escape(value) { return value; } };
+const taskStorageValues = new Map();
+context.window.localStorage = {
+    getItem(key) { return taskStorageValues.has(key) ? taskStorageValues.get(key) : null; },
+    setItem(key, value) { taskStorageValues.set(key, String(value)); },
+    removeItem(key) { taskStorageValues.delete(key); },
+};
 vm.createContext(context);
 
 vm.runInContext(fs.readFileSync(new URL('./data.js', import.meta.url), 'utf8'), context);
 vm.runInContext(fs.readFileSync(new URL('./data-modals.js', import.meta.url), 'utf8'), context);
+vm.runInContext(fs.readFileSync(new URL('./image-tasks.js', import.meta.url), 'utf8'), context);
 vm.runInContext(fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8'), context);
 
 const api = context.window.ADMIN_TESTING;
@@ -85,6 +92,16 @@ assert.equal(Array.from(modifiedOnly, (entry) => entry.key).join(','), 'siteConf
 
 assert.equal(api.valuesEqual('200', 200, 'number'), true);
 assert.equal(api.valuesEqual('false', false, 'boolean'), true);
+assert.equal(api.taskListResolved({
+    version: 1,
+    createdAt: '2026-07-22T00:00:00.000Z',
+    items: [{ key: 'heroSlides.0.image', order: 0, status: 'done' }],
+}), true);
+assert.equal(api.taskListResolved({
+    version: 1,
+    createdAt: '2026-07-22T00:00:00.000Z',
+    items: [{ key: 'heroSlides.0.image', order: 0, status: 'pending' }],
+}), false);
 
 const html = fs.readFileSync(new URL('../admin.html', import.meta.url), 'utf8');
 for (const id of ['admin-login', 'admin-nav', 'sidebar-toggle', 'editor-content', 'save-button', 'preview-button', 'publish-button', 'confirm-modal', 'image-task-tour', 'image-task-tour-done', 'image-task-tour-skip']) {
@@ -118,5 +135,9 @@ assert.match(adminSource, /aria-pressed=/);
 assert.match(adminSource, /trapConfirmFocus/);
 assert.match(adminSource, /function focusField\(field\)/);
 assert.match(adminSource, /function startImageTaskTour\(\)/);
+assert.match(adminSource, /function showImageTaskSummary\(\)/);
+assert.match(adminSource, /function offerTaskListClearAfterPublish\(\)/);
+assert.match(adminSource, /這份修改清單已超過 24 小時/);
+assert.match(adminSource, /清單已完成，要清除嗎/);
 
 console.log(`Admin tests passed (${entries.length} demo fields)`);
