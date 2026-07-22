@@ -222,6 +222,22 @@ button { cursor: pointer; }
 .toast.show { transform: translate(-50%, 0); opacity: 1; }
 .toast.error { background: var(--danger); }
 
+.image-task-tour { position: fixed; z-index: 80; right: 24px; bottom: 104px; width: min(380px, calc(100vw - 48px)); overflow: hidden; border: 1px solid rgba(41,75,53,.2); border-radius: 20px; background: var(--paper); box-shadow: 0 22px 65px rgba(29,48,35,.24); }
+.image-task-tour-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 17px 18px 13px; color: white; background: var(--forest); }
+.image-task-tour-head small { display: block; margin-bottom: 3px; color: rgba(255,255,255,.72); font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+.image-task-tour-head h2 { margin: 0; color: white; font: 900 19px/1.35 "Noto Serif TC", serif; }
+.image-task-tour-head button { flex: 0 0 auto; width: 34px; height: 34px; border: 1px solid rgba(255,255,255,.25); border-radius: 50%; color: white; background: rgba(255,255,255,.1); font-size: 20px; }
+.image-task-tour-body { display: grid; gap: 10px; padding: 14px 16px; }
+.image-task-tour-preview { width: 100%; height: 142px; display: grid; place-items: center; overflow: hidden; border-radius: 13px; color: var(--muted); background: #e9eee9; font-size: 12px; }
+.image-task-tour-preview img { width: 100%; height: 100%; object-fit: cover; }
+.image-task-tour-location { margin: 0; padding: 9px 10px; border-left: 3px solid var(--gold); border-radius: 0 9px 9px 0; color: #675b41; background: #fff8e5; font-size: 12px; line-height: 1.55; }
+.image-task-tour-hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.image-task-tour-error { margin: 0; padding: 9px 10px; border-radius: 9px; color: var(--danger); background: var(--rose-soft); font-size: 12px; line-height: 1.55; }
+.image-task-tour-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; padding: 0 16px 16px; }
+.image-task-tour-actions button { min-width: 0; min-height: 38px; padding: 7px; font-size: 11px; }
+.image-task-tour-actions .danger-button { grid-column: 1 / -1; border: 1px solid #dfaaa4; border-radius: 10px; color: var(--danger); background: #fff6f4; font-weight: 800; }
+.image-manager-card.image-task-tour-target { border-color: #d39220; box-shadow: 0 0 0 4px rgba(211,146,32,.18), 0 10px 28px rgba(34,54,41,.1); scroll-margin-block: 150px; }
+
 .app-shell.sidebar-collapsed .sidebar { width: 82px; padding-inline: 12px; }
 .app-shell.sidebar-collapsed .sidebar-brand { justify-content: center; padding-inline: 0; }
 .app-shell.sidebar-collapsed .sidebar-logo { width: 42px; height: 42px; }

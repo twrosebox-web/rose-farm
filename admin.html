@@ -97,6 +97,26 @@
         </footer>
     </div>
 
+    <aside id="image-task-tour" class="image-task-tour hidden" aria-live="polite" aria-label="圖片修改清單導覽">
+        <div class="image-task-tour-head">
+            <div><small id="image-task-tour-progress">修改清單導覽</small><h2 id="image-task-tour-title">圖片修改任務</h2></div>
+            <button id="image-task-tour-close" type="button" aria-label="離開導覽">×</button>
+        </div>
+        <div class="image-task-tour-body">
+            <div id="image-task-tour-preview" class="image-task-tour-preview"><span>圖片預覽</span></div>
+            <p id="image-task-tour-location" class="image-task-tour-location"></p>
+            <p id="image-task-tour-hint" class="image-task-tour-hint">貼上新的圖片網址（https:// 開頭），改完按「完成這項」。</p>
+            <p id="image-task-tour-error" class="image-task-tour-error hidden"></p>
+        </div>
+        <div class="image-task-tour-actions">
+            <button id="image-task-tour-prev" class="ghost-button" type="button">上一項</button>
+            <button id="image-task-tour-done" class="primary-button" type="button">完成這項</button>
+            <button id="image-task-tour-skip" class="ghost-button" type="button">略過</button>
+            <button id="image-task-tour-next" class="ghost-button" type="button">下一項</button>
+            <button id="image-task-tour-remove" class="danger-button hidden" type="button">從清單移除</button>
+        </div>
+    </aside>
+
     <div id="confirm-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
         <div class="confirm-card">
             <button id="confirm-close" class="modal-close" type="button" aria-label="關閉">×</button>
@@ -113,6 +133,7 @@
     <script src="js/data.js"></script>
     <script src="js/data-modals.js"></script>
     <script src="js/cloud-config.js"></script>
+    <script src="js/image-tasks.js"></script>
     <script src="js/admin.js"></script>
 </body>
 </html>

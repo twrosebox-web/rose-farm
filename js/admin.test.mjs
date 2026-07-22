@@ -87,10 +87,11 @@ assert.equal(api.valuesEqual('200', 200, 'number'), true);
 assert.equal(api.valuesEqual('false', false, 'boolean'), true);
 
 const html = fs.readFileSync(new URL('../admin.html', import.meta.url), 'utf8');
-for (const id of ['admin-login', 'admin-nav', 'sidebar-toggle', 'editor-content', 'save-button', 'preview-button', 'publish-button', 'confirm-modal']) {
+for (const id of ['admin-login', 'admin-nav', 'sidebar-toggle', 'editor-content', 'save-button', 'preview-button', 'publish-button', 'confirm-modal', 'image-task-tour', 'image-task-tour-done', 'image-task-tour-skip']) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
 }
 assert.match(html, /js\/admin\.js/);
+assert.match(html, /js\/image-tasks\.js[\s\S]*js\/admin\.js/);
 assert.match(html, /<nav id="mobile-nav"/);
 assert.match(html, /aria-describedby="confirm-message"/);
 
@@ -107,11 +108,15 @@ assert.match(css, /\.image-grid \{[^}]*repeat\(auto-fill, minmax\(220px, 280px\)
 assert.match(css, /\.image-manager-card \{[^}]*max-width: 280px/s);
 assert.match(css, /body \{[^}]*overflow-x: clip/s);
 assert.match(css, /\.side-nav::\-webkit-scrollbar \{ width: 5px/);
+assert.match(css, /\.image-task-tour \{/);
+assert.match(css, /\.image-manager-card\.image-task-tour-target/);
 assert.match(css, /\.sidebar:hover \.side-nav::\-webkit-scrollbar-thumb/);
 
 const adminSource = fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
 assert.match(adminSource, /aria-current="page"/);
 assert.match(adminSource, /aria-pressed=/);
 assert.match(adminSource, /trapConfirmFocus/);
+assert.match(adminSource, /function focusField\(field\)/);
+assert.match(adminSource, /function startImageTaskTour\(\)/);
 
 console.log(`Admin tests passed (${entries.length} demo fields)`);

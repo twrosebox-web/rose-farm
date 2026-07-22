@@ -51,12 +51,14 @@
     var state = {
         entries: [], entryByKey: new Map(), official: {}, originalDraft: {}, current: {}, dirty: new Set(),
         passcode: '', connected: false, demo: false, activeSection: 'all', query: '', dirtyOnly: false,
-        faqCategory: '0', imageCategory: 'hero', pendingConfirm: null, toastTimer: null
+        faqCategory: '0', imageCategory: 'hero', pendingConfirm: null, toastTimer: null,
+        taskTourActive: false, taskTourIndex: 0
     };
     var lastFocusedElement = null;
 
     function byId(id) { return document.getElementById(id); }
     function endpoint() { return String((window.CLOUD_CONFIG && window.CLOUD_CONFIG.endpoint) || '').trim(); }
+    function imageTaskStore() { return window.RoseFarmImageTasks || null; }
     function escapeHtml(value) {
         return String(value == null ? '' : value)
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -851,6 +853,7 @@
         badge.textContent = state.demo ? '展示模式｜未連接' : '● 已連接 Sheet';
         activateDeepLinkContext();
         renderContent();
+        maybeStartImageTaskTour();
     }
 
     function enterDemo() {
@@ -887,16 +890,9 @@
         return new URLSearchParams(window.location.search).get('field');
     }
 
-    function activateDeepLinkContext() {
-        if (deepLinkUsed) return;
-        var field = deepLinkField();
-        if (!field) return;
+    function activateFieldContext(field) {
         var entry = state.entryByKey.get(field);
-        if (!entry) {
-            deepLinkUsed = true;
-            setTimeout(function () { showToast('找不到這個後台欄位，可能已停用或更名。', true); }, 80);
-            return;
-        }
+        if (!entry) return false;
         if (isImageKey(field)) {
             state.activeSection = 'images';
             state.imageCategory = imageCategoryForKey(field);
@@ -906,16 +902,140 @@
         }
         state.query = '';
         state.dirtyOnly = false;
+        byId('admin-search').value = '';
+        return true;
+    }
+
+    function activateDeepLinkContext() {
+        if (deepLinkUsed) return;
+        var field = deepLinkField();
+        if (!field) return;
+        if (!activateFieldContext(field)) {
+            deepLinkUsed = true;
+            setTimeout(function () { showToast('找不到這個後台欄位，可能已停用或更名。', true); }, 80);
+        }
+    }
+
+    function focusRenderedField(field, markTourTarget) {
+        var target = document.querySelector('[data-field-key="' + cssEscape(field) + '"]');
+        if (!target) return false;
+        setTimeout(function () {
+            Array.prototype.forEach.call(document.querySelectorAll('.image-task-tour-target'), function (element) { element.classList.remove('image-task-tour-target'); });
+            if (markTourTarget) target.classList.add('image-task-tour-target');
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            var input = target.querySelector('[data-key]');
+            if (input) input.focus();
+        }, 100);
+        return true;
+    }
+
+    function focusField(field) {
+        if (!activateFieldContext(field)) return false;
+        renderContent();
+        return focusRenderedField(field, true);
     }
 
     function focusDeepLink() {
         if (deepLinkUsed) return;
         var field = deepLinkField();
         if (!field) return;
-        var target = document.querySelector('[data-field-key="' + cssEscape(field) + '"]');
-        if (!target) return;
+        if (!focusRenderedField(field, false)) return;
         deepLinkUsed = true;
-        setTimeout(function () { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); var input = target.querySelector('[data-key]'); if (input) input.focus(); }, 100);
+    }
+
+    function tourRequested() {
+        return new URLSearchParams(window.location.search).get('tour') === '1';
+    }
+
+    function currentTaskList() {
+        var store = imageTaskStore();
+        return store && store.available() ? store.load() : { items: [] };
+    }
+
+    function setTourVisible(visible) {
+        byId('image-task-tour').classList.toggle('hidden', !visible);
+    }
+
+    function renderImageTaskTour() {
+        var list = currentTaskList();
+        if (!state.taskTourActive || !list.items.length) { setTourVisible(false); return; }
+        state.taskTourIndex = Math.max(0, Math.min(state.taskTourIndex, list.items.length - 1));
+        var item = list.items[state.taskTourIndex];
+        var entry = state.entryByKey.get(item.key);
+        var invalid = !entry || !isImageKey(item.key);
+        byId('image-task-tour-progress').textContent = '修改清單導覽　第 ' + (state.taskTourIndex + 1) + ' / ' + list.items.length + ' 項';
+        byId('image-task-tour-title').textContent = item.label;
+        byId('image-task-tour-location').textContent = '網站位置：' + (entry ? imageLocationHint(item.key) : item.locationHint);
+        var preview = byId('image-task-tour-preview');
+        var value = entry ? state.current[item.key] : '';
+        preview.innerHTML = isSafeImageUrl(value) ? '<img src="' + escapeAttr(value) + '" alt="目前圖片預覽">' : '<span>目前沒有可預覽的圖片</span>';
+        byId('image-task-tour-error').textContent = invalid ? '此欄位已不存在，可能已改版。可「略過」或「從清單移除」。' : '';
+        byId('image-task-tour-error').classList.toggle('hidden', !invalid);
+        byId('image-task-tour-remove').classList.toggle('hidden', !invalid);
+        byId('image-task-tour-done').disabled = invalid;
+        byId('image-task-tour-prev').disabled = state.taskTourIndex === 0;
+        byId('image-task-tour-next').disabled = state.taskTourIndex === list.items.length - 1;
+        setTourVisible(true);
+    }
+
+    function showImageTaskTourIndex(index) {
+        var list = currentTaskList();
+        if (!list.items.length) { leaveImageTaskTour(); return; }
+        state.taskTourIndex = Math.max(0, Math.min(index, list.items.length - 1));
+        var item = list.items[state.taskTourIndex];
+        if (state.entryByKey.has(item.key)) focusField(item.key);
+        renderImageTaskTour();
+    }
+
+    function startImageTaskTour() {
+        var store = imageTaskStore();
+        var list = currentTaskList();
+        if (!store || !store.available() || !list.items.length) return false;
+        state.taskTourActive = true;
+        var pendingIndex = store.nextPendingIndex(list, 0);
+        showImageTaskTourIndex(pendingIndex >= 0 ? pendingIndex : 0);
+        return true;
+    }
+
+    function leaveImageTaskTour() {
+        state.taskTourActive = false;
+        setTourVisible(false);
+        Array.prototype.forEach.call(document.querySelectorAll('.image-task-tour-target'), function (element) { element.classList.remove('image-task-tour-target'); });
+    }
+
+    function moveImageTaskTour(delta) {
+        showImageTaskTourIndex(state.taskTourIndex + delta);
+    }
+
+    function finishImageTask(status) {
+        var store = imageTaskStore();
+        var list = currentTaskList();
+        var item = list.items[state.taskTourIndex];
+        if (!store || !item) return;
+        store.setStatus(item.key, status);
+        list = currentTaskList();
+        var next = store.nextPendingIndex(list, state.taskTourIndex + 1);
+        if (next < 0) {
+            leaveImageTaskTour();
+            showToast('修改清單已走完；接著可儲存草稿並預覽。');
+            return;
+        }
+        showImageTaskTourIndex(next);
+    }
+
+    function removeCurrentImageTask() {
+        var store = imageTaskStore();
+        var list = currentTaskList();
+        var item = list.items[state.taskTourIndex];
+        if (!store || !item) return;
+        store.remove(item.key);
+        var remaining = currentTaskList();
+        if (!remaining.items.length) { leaveImageTaskTour(); return; }
+        showImageTaskTourIndex(Math.min(state.taskTourIndex, remaining.items.length - 1));
+    }
+
+    function maybeStartImageTaskTour() {
+        if (tourRequested()) startImageTaskTour();
     }
 
     function bindEvents() {
@@ -968,6 +1088,12 @@
         byId('preview-button').addEventListener('click', previewDraft);
         byId('publish-button').addEventListener('click', function () { publishDraft(false); });
         byId('logout-button').addEventListener('click', logout);
+        byId('image-task-tour-close').addEventListener('click', leaveImageTaskTour);
+        byId('image-task-tour-prev').addEventListener('click', function () { moveImageTaskTour(-1); });
+        byId('image-task-tour-next').addEventListener('click', function () { moveImageTaskTour(1); });
+        byId('image-task-tour-done').addEventListener('click', function () { finishImageTask('done'); });
+        byId('image-task-tour-skip').addEventListener('click', function () { finishImageTask('skipped'); });
+        byId('image-task-tour-remove').addEventListener('click', removeCurrentImageTask);
         byId('sidebar-toggle').addEventListener('click', function () {
             setSidebarCollapsed(!byId('admin-app').classList.contains('sidebar-collapsed'), true);
         });
@@ -997,6 +1123,8 @@
         containsBrandTerm: containsBrandTerm, allowedDemoKey: allowedDemoKey, buildDemoEntries: buildDemoEntries,
         faqCategoryIndex: faqCategoryIndex, imageCategoryForKey: imageCategoryForKey, imageLocationHint: imageLocationHint,
         isSafeImageUrl: isSafeImageUrl,
+        activateFieldContext: activateFieldContext,
+        tourRequested: tourRequested,
         filterEntries: function (entries, category, query, dirtyOnly, dirtyKeys, currentValues) {
             var oldCurrent = state.current; state.current = currentValues || {};
             var result = filterEntries(entries, category, query, dirtyOnly, dirtyKeys || new Set());
