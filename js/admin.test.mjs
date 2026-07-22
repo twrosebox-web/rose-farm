@@ -104,13 +104,14 @@ assert.equal(api.taskListResolved({
 }), false);
 
 const html = fs.readFileSync(new URL('../admin.html', import.meta.url), 'utf8');
-for (const id of ['admin-login', 'admin-nav', 'sidebar-toggle', 'editor-content', 'save-button', 'preview-button', 'publish-button', 'confirm-modal', 'image-task-tour', 'image-task-tour-done', 'image-task-tour-skip']) {
+for (const id of ['admin-login', 'admin-nav', 'sidebar-toggle', 'editor-content', 'save-button', 'live-site-button', 'preview-button', 'publish-button', 'confirm-modal', 'image-task-tour', 'image-task-tour-done', 'image-task-tour-skip']) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
 }
 assert.match(html, /js\/admin\.js/);
 assert.match(html, /js\/image-tasks\.js[\s\S]*js\/admin\.js/);
 assert.match(html, /<nav id="mobile-nav"/);
 assert.match(html, /aria-describedby="confirm-message"/);
+assert.match(html, /id="live-site-button"[^>]+href="\.\/"[^>]+target="_blank"[^>]+rel="noopener noreferrer"/);
 
 const css = fs.readFileSync(new URL('../css/admin.css', import.meta.url), 'utf8');
 assert.match(css, /\.app-shell\.sidebar-collapsed \.sidebar/);
@@ -129,6 +130,8 @@ assert.match(css, /\.image-task-tour \{/);
 assert.match(css, /\.image-manager-card\.image-task-tour-target/);
 assert.match(css, /@media \(max-width: 720px\) \{[\s\S]*\.image-task-tour \{[\s\S]*bottom: calc\(86px \+ env\(safe-area-inset-bottom/s);
 assert.match(css, /scroll-margin-bottom: 340px/);
+assert.match(css, /\.live-site-button \{[^}]*text-decoration: none/s);
+assert.match(css, /\.topbar-actions \.live-site-button::after \{ content: "🌐"/);
 assert.match(css, /\.sidebar:hover \.side-nav::\-webkit-scrollbar-thumb/);
 
 const adminSource = fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8');

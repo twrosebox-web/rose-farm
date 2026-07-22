@@ -37,11 +37,13 @@ button { cursor: pointer; }
 .passcode-row input { min-height: 50px; padding: 0 16px; }
 .passcode-row input:focus, .field-control input:focus, .field-control textarea:focus, .field-control select:focus { border-color: var(--forest); box-shadow: 0 0 0 4px rgba(41,75,53,.10); }
 .icon-button { border: 1px solid var(--line); border-radius: 13px; background: white; }
-.primary-button, .secondary-button, .publish-button, .ghost-button, .filter-button { min-height: 44px; border-radius: 12px; padding: 0 18px; border: 0; font-weight: 800; transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease; }
+.primary-button, .secondary-button, .live-site-button, .publish-button, .ghost-button, .filter-button { min-height: 44px; border-radius: 12px; padding: 0 18px; border: 0; font-weight: 800; transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease; }
 .primary-button { color: #fff; background: var(--forest); box-shadow: 0 9px 24px rgba(41,75,53,.20); }
 .primary-button:hover, .publish-button:hover { transform: translateY(-1px); }
 .primary-button:disabled { opacity: .42; cursor: not-allowed; transform: none; box-shadow: none; }
 .secondary-button { color: var(--forest); background: var(--forest-soft); }
+.live-site-button { display: inline-flex; align-items: center; justify-content: center; color: var(--forest); background: #fff; box-shadow: inset 0 0 0 1px var(--line); text-decoration: none; white-space: nowrap; }
+.live-site-button:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px var(--forest), 0 7px 18px rgba(41,75,53,.1); }
 .publish-button { color: #fff; background: var(--rose); box-shadow: 0 9px 24px rgba(207,116,111,.22); }
 .ghost-button { color: var(--muted); border: 1px solid var(--line); background: transparent; }
 .full-button { width: 100%; margin-top: 10px; }
@@ -278,6 +280,8 @@ button { cursor: pointer; }
     .topbar-actions .status-badge { display: none; }
     .topbar-actions .secondary-button { width: 42px; min-height: 40px; padding: 0; display: grid; place-items: center; overflow: hidden; font-size: 0; }
     .topbar-actions .secondary-button::after { content: "👁"; font-size: 16px; }
+    .topbar-actions .live-site-button { width: 42px; min-height: 40px; padding: 0; overflow: hidden; font-size: 0; }
+    .topbar-actions .live-site-button::after { content: "🌐"; font-size: 16px; }
     .publish-button { min-height: 40px; padding: 0 13px; font-size: 12px; }
     .mobile-nav { top: 0; }
     .content-area { width: min(100% - 26px, 1180px); margin-top: 16px; }
