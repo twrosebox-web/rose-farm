@@ -11,6 +11,12 @@ function makeClassList() {
     add(value) { values.add(value); },
     remove(value) { values.delete(value); },
     contains(value) { return values.has(value); },
+    toggle(value, force) {
+      if (force === true) values.add(value);
+      else if (force === false) values.delete(value);
+      else if (values.has(value)) values.delete(value);
+      else values.add(value);
+    },
   };
 }
 
@@ -28,8 +34,14 @@ function makeElement(tagName = "div") {
     children,
     appendChild(child) {
       children.push(child);
+      child.parentElement = element;
       if (child.id) elements.set(child.id, child);
       return child;
+    },
+    removeChild(child) {
+      const index = children.indexOf(child);
+      if (index >= 0) children.splice(index, 1);
+      child.parentElement = null;
     },
     setAttribute(name, value) {
       attributes[name] = String(value);
@@ -44,6 +56,8 @@ function makeElement(tagName = "div") {
     matches(selector) { return selector === "img[data-content-key]" && this.tagName === "IMG" && !!this.dataset.contentKey; },
     closest(selector) { return this.matches(selector) ? this : null; },
     contains(target) { return target === this; },
+    querySelector() { return null; },
+    remove() { if (this.parentElement) this.parentElement.removeChild(this); },
   };
   Object.defineProperty(element, "id", {
     get() { return attributes.id || ""; },
@@ -66,17 +80,28 @@ const document = {
   createElement: makeElement,
   createTextNode(text) { return { textContent: String(text) }; },
   getElementById(id) { return elements.get(id) || null; },
-  querySelectorAll(selector) { return selector === "img[data-content-key]" ? [image] : []; },
+  querySelectorAll(selector) {
+    if (selector === "img[data-content-key]") return [image];
+    if (selector === ".draft-task-badge") return body.children.filter((child) => child.className === "draft-task-badge");
+    return [];
+  },
   addEventListener(name, handler) { listeners[name] = handler; },
 };
 
 const windowObject = {
   location: { search: "?preview=draft&token=test" },
   innerWidth: 1200,
+  localStorage: {
+    values: new Map(),
+    getItem(key) { return this.values.has(key) ? this.values.get(key) : null; },
+    setItem(key, value) { this.values.set(key, String(value)); },
+    removeItem(key) { this.values.delete(key); },
+  },
 };
 
-const context = { console, document, window: windowObject, Number, Object, String };
+const context = { console, document, window: windowObject, Number, Object, String, Date, JSON, isFinite };
 vm.createContext(context);
+vm.runInContext(fs.readFileSync(new URL("./image-tasks.js", import.meta.url), "utf8"), context);
 vm.runInContext(fs.readFileSync(new URL("./draft-inspector.js", import.meta.url), "utf8"), context);
 
 windowObject.installDraftInspector({
@@ -105,5 +130,26 @@ assert.match(elements.get("draft-inspector-link").textContent, /專屬後台/);
 assert.match(elements.get("draft-inspector-sheet-link").href, /gid=2026072101&range=B48$/);
 assert.match(elements.get("draft-inspector-sheet-link").textContent, /B48/);
 assert.equal(elements.get("draft-inspector-panel").classList.contains("is-open"), true);
+
+elements.get("draft-task-mode-toggle").on_click();
+assert.equal(documentElement.dataset.draftTaskMode, "true");
+listeners.click({
+  target: image,
+  preventDefault() {},
+  stopPropagation() {},
+});
+const taskList = windowObject.RoseFarmImageTasks.load();
+assert.equal(taskList.items.length, 1);
+assert.equal(taskList.items[0].key, "food.0.image");
+assert.equal(image.classList.contains("draft-task-selected"), true);
+assert.equal(image.dataset.draftTaskNumber, "1");
+
+listeners.click({
+  target: image,
+  preventDefault() {},
+  stopPropagation() {},
+});
+assert.equal(windowObject.RoseFarmImageTasks.load().items.length, 0);
+assert.equal(image.classList.contains("draft-task-selected"), false);
 
 console.log("Draft inspector tests passed");

@@ -10,6 +10,9 @@
     var tooltip;
     var panel;
     var currentImage;
+    var taskStore;
+    var selectionMode = false;
+    var taskModeButton;
 
     function isPreviewMode() {
         return !!(window.location && /(?:^|[?&])preview=draft(?:&|$)/.test(window.location.search || ''));
@@ -50,6 +53,12 @@
                 '#draft-inspector-panel a{display:block;margin-top:15px;background:#3a5a40;color:#fff!important;text-align:center;text-decoration:none;border-radius:10px;padding:12px 15px;font-size:16px;font-weight:800;}',
                 '#draft-inspector-panel a.draft-sheet-link{margin-top:8px;background:#edf4ee;color:#264b35!important;font-size:13px;}',
                 '#draft-inspector-close{position:absolute;right:12px;top:10px;width:34px;height:34px;border:0;border-radius:50%;background:#edf4ee;color:#264b35;font-size:20px;font-weight:800;cursor:pointer;}',
+                '#draft-task-mode-toggle{position:fixed;z-index:10040;right:18px;bottom:18px;border:0;border-radius:999px;background:#173f2a;color:#fff;padding:13px 18px;font:800 15px/1.2 system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.24);cursor:pointer;}',
+                '#draft-task-mode-toggle[aria-pressed="true"]{background:#b45309;}',
+                'html[data-draft-task-mode="true"] img[data-content-key]{cursor:crosshair!important;}',
+                'html[data-draft-task-mode="true"] img[data-content-key].draft-task-selected{outline:5px solid #f59e0b!important;outline-offset:-5px;filter:brightness(.88);}',
+                '.draft-task-badge-host{position:relative!important;}',
+                '.draft-task-badge{position:absolute;z-index:30;display:grid;place-items:center;width:30px;height:30px;border:3px solid #fff;border-radius:50%;background:#b45309;color:#fff;font:900 14px/1 system-ui,sans-serif;box-shadow:0 3px 12px rgba(0,0,0,.35);pointer-events:none;}',
                 '@media(max-width:640px){#draft-inspector-panel{right:10px;bottom:10px;width:calc(100vw - 20px);}}'
             ].join('');
             document.head.appendChild(style);
@@ -115,6 +124,123 @@
             panel.appendChild(sheetLink);
             document.body.appendChild(panel);
         }
+
+        taskModeButton = document.getElementById('draft-task-mode-toggle');
+        if (!taskModeButton) {
+            taskModeButton = document.createElement('button');
+            taskModeButton.id = 'draft-task-mode-toggle';
+            taskModeButton.type = 'button';
+            taskModeButton.setAttribute('aria-pressed', 'false');
+            taskModeButton.addEventListener('click', function() {
+                setSelectionMode(!selectionMode);
+            });
+            document.body.appendChild(taskModeButton);
+        }
+        renderTaskModeButton();
+    }
+
+    function taskList() {
+        return taskStore && typeof taskStore.load === 'function' ? taskStore.load() : { items: [] };
+    }
+
+    function renderTaskModeButton() {
+        if (!taskModeButton) return;
+        var count = taskList().items.length;
+        taskModeButton.textContent = selectionMode
+            ? '✓ 清單模式中（已選 ' + count + ' 張）'
+            : '🗂 建立修改清單' + (count ? '（' + count + '）' : '');
+        taskModeButton.setAttribute('aria-pressed', selectionMode ? 'true' : 'false');
+    }
+
+    function imageTask(image) {
+        var key = image && image.dataset ? image.dataset.contentKey : '';
+        var label = ((image && image.getAttribute('alt')) || '網站圖片').replace(/｜大花.*$/, '').trim() || '網站圖片';
+        var section = image && image.closest ? image.closest('section[id]') : null;
+        var heading = section && section.querySelector ? section.querySelector('h1,h2,h3') : null;
+        var locationHint = heading && heading.textContent ? heading.textContent.trim() : label;
+        return { key: key, label: label, locationHint: locationHint };
+    }
+
+    function removeTaskBadges() {
+        if (!document.querySelectorAll) return;
+        Array.prototype.forEach.call(document.querySelectorAll('.draft-task-badge'), function(badge) {
+            var parent = badge.parentElement;
+            if (badge.remove) badge.remove();
+            else if (parent && parent.removeChild) parent.removeChild(badge);
+            if (parent && parent.querySelector && !parent.querySelector('.draft-task-badge')) {
+                parent.classList.remove('draft-task-badge-host');
+                if (parent.dataset && parent.dataset.draftTaskPositionAdded === 'true') {
+                    parent.style.position = '';
+                    delete parent.dataset.draftTaskPositionAdded;
+                }
+            }
+        });
+    }
+
+    function addTaskBadge(image, number) {
+        var parent = image && image.parentElement;
+        if (!parent || !document.createElement) return;
+        var badge = document.createElement('span');
+        badge.className = 'draft-task-badge';
+        badge.textContent = String(number);
+        badge.setAttribute('aria-hidden', 'true');
+        if (rootComputedStyle(parent) === 'static') {
+            parent.style.position = 'relative';
+            parent.dataset.draftTaskPositionAdded = 'true';
+        }
+        parent.classList.add('draft-task-badge-host');
+        parent.appendChild(badge);
+        if (image.getBoundingClientRect && parent.getBoundingClientRect) {
+            var imageRect = image.getBoundingClientRect();
+            var parentRect = parent.getBoundingClientRect();
+            badge.style.left = Math.max(4, imageRect.right - parentRect.left - 34) + 'px';
+            badge.style.top = Math.max(4, imageRect.top - parentRect.top + 6) + 'px';
+        } else {
+            badge.style.right = '6px';
+            badge.style.top = '6px';
+        }
+    }
+
+    function rootComputedStyle(element) {
+        if (window.getComputedStyle) return window.getComputedStyle(element).position;
+        return (element.style && element.style.position) || 'static';
+    }
+
+    function syncSelectedImages() {
+        var items = taskList().items;
+        var orderByKey = {};
+        items.forEach(function(item, index) { orderByKey[item.key] = index + 1; });
+        removeTaskBadges();
+        var images = document.querySelectorAll('img[data-content-key]');
+        Array.prototype.forEach.call(images, function(image) {
+            var number = orderByKey[image.dataset.contentKey];
+            image.classList.toggle('draft-task-selected', !!number);
+            if (number) {
+                image.dataset.draftTaskNumber = String(number);
+                image.setAttribute('title', '已加入第 ' + number + ' 項，再點一次移除');
+                addTaskBadge(image, number);
+            } else {
+                delete image.dataset.draftTaskNumber;
+                image.setAttribute('title', selectionMode ? '點一下加入修改清單' : '草稿預覽：點一下直接前往後台修改');
+            }
+        });
+        renderTaskModeButton();
+    }
+
+    function setSelectionMode(enabled) {
+        selectionMode = !!enabled;
+        document.documentElement.dataset.draftTaskMode = selectionMode ? 'true' : 'false';
+        if (panel) panel.classList.remove('is-open');
+        if (tooltip) tooltip.style.display = 'none';
+        syncSelectedImages();
+    }
+
+    function toggleTaskForImage(image) {
+        if (!taskStore || typeof taskStore.toggle !== 'function') return false;
+        var result = taskStore.toggle(imageTask(image));
+        if (!result.ok) return false;
+        syncSelectedImages();
+        return true;
     }
 
     function prepareImages() {
@@ -133,7 +259,10 @@
         if (currentImage && currentImage !== image) currentImage.classList.remove('draft-inspector-hover');
         currentImage = image;
         image.classList.add('draft-inspector-hover');
-        tooltip.textContent = '點一下 → 前往後台修改這張圖片';
+        var number = image.dataset.draftTaskNumber;
+        tooltip.textContent = selectionMode
+            ? (number ? '已加入第 ' + number + ' 項，再點一次移除' : '點一下加入修改清單')
+            : '點一下 → 前往後台修改這張圖片';
         tooltip.style.display = 'block';
         var left = Math.min((event.clientX || 0) + 14, window.innerWidth - 275);
         var top = Math.max(10, (event.clientY || 0) + 14);
@@ -185,7 +314,8 @@
             if (!image || !sheetRowFor(image)) return;
             event.preventDefault();
             event.stopPropagation();
-            openPanel(image);
+            if (selectionMode) toggleTaskForImage(image);
+            else openPanel(image);
         }, true);
         document.addEventListener('keydown', function(event) {
             if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -193,7 +323,8 @@
             if (!image || !sheetRowFor(image)) return;
             event.preventDefault();
             event.stopPropagation();
-            openPanel(image);
+            if (selectionMode) toggleTaskForImage(image);
+            else openPanel(image);
         }, true);
     }
 
@@ -201,9 +332,17 @@
         if (!isPreviewMode() || !payload || payload.mode !== 'draft') return;
         editorRows = payload.editorRows || {};
         editorSheetId = Number(payload.editorSheetId) || DEFAULT_EDITOR_SHEET_ID;
+        taskStore = window.RoseFarmImageTasks || null;
         ensureUi();
         bindEventsOnce();
         prepareImages();
+        syncSelectedImages();
         document.documentElement.dataset.draftInspector = 'ready';
+    };
+
+    window.DRAFT_INSPECTOR_TESTING = {
+        imageTask: imageTask,
+        setSelectionMode: setSelectionMode,
+        syncSelectedImages: syncSelectedImages
     };
 })();
