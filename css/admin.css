@@ -304,6 +304,25 @@ button { cursor: pointer; }
     .save-bar { min-height: 64px; padding-left: 14px; }
     .save-bar #save-hint, .save-bar #discard-button { display: none; }
     .save-bar .primary-button { min-width: 118px; }
+    .image-task-tour { left: 10px; right: 10px; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: min(50dvh, 410px); overflow-y: auto; border-radius: 17px; }
+    .image-task-tour-head { position: sticky; top: 0; z-index: 1; padding: 11px 13px 9px; }
+    .image-task-tour-head small { font-size: 9px; }
+    .image-task-tour-head h2 { font-size: 16px; }
+    .image-task-tour-head button { width: 31px; height: 31px; }
+    .image-task-tour-body { grid-template-columns: 82px minmax(0, 1fr); gap: 8px 10px; padding: 10px 12px; }
+    .image-task-tour-preview { grid-row: 1 / span 3; width: 82px; height: 82px; }
+    .image-task-tour-preview.summary { grid-row: 1 / span 2; height: 82px; }
+    .image-task-tour-preview.summary span { width: 44px; height: 44px; font-size: 23px; }
+    .image-task-tour-location, .image-task-tour-hint, .image-task-tour-error { min-width: 0; font-size: 10px; }
+    .image-task-tour-location { padding: 7px 8px; }
+    .image-task-tour-actions { position: sticky; bottom: 0; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--paper); }
+    .image-task-tour-actions button { min-height: 35px; padding: 5px 3px; font-size: 10px; }
+    .image-manager-card.image-task-tour-target { scroll-margin-top: 90px; scroll-margin-bottom: 340px; }
+}
+
+@media (max-width: 420px) {
+    .image-task-tour-actions { grid-template-columns: repeat(2, 1fr); }
+    .image-task-tour-actions .danger-button { grid-column: 1 / -1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

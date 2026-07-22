@@ -158,5 +158,6 @@ assert.equal(windowObject.RoseFarmImageTasks.load().items.length, 0);
 assert.equal(image.classList.contains("draft-task-selected"), false);
 
 assert.match(fs.readFileSync(new URL("./draft-inspector.js", import.meta.url), "utf8"), /清單功能不可用｜仍可單張修改/);
+assert.match(fs.readFileSync(new URL("./draft-inspector.js", import.meta.url), "utf8"), /#draft-task-panel\{left:0;right:0;bottom:0;width:100%;max-height:76dvh/);
 
 console.log("Draft inspector tests passed");

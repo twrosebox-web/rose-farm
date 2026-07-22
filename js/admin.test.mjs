@@ -127,6 +127,8 @@ assert.match(css, /body \{[^}]*overflow-x: clip/s);
 assert.match(css, /\.side-nav::\-webkit-scrollbar \{ width: 5px/);
 assert.match(css, /\.image-task-tour \{/);
 assert.match(css, /\.image-manager-card\.image-task-tour-target/);
+assert.match(css, /@media \(max-width: 720px\) \{[\s\S]*\.image-task-tour \{[\s\S]*bottom: calc\(86px \+ env\(safe-area-inset-bottom/s);
+assert.match(css, /scroll-margin-bottom: 340px/);
 assert.match(css, /\.sidebar:hover \.side-nav::\-webkit-scrollbar-thumb/);
 
 const adminSource = fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
